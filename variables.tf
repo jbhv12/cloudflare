@@ -3,6 +3,10 @@ variable "cloudflare_account_id" {
   type        = string
   default     = "d8323c6cfda50c6ff2a74c6e6a01f1f3"
 }
+variable "cloudflare_api_token" {
+  type      = string
+  sensitive = true
+}
 variable "dns_zone_id" {
   description = "The domain name to manage."
   type        = string

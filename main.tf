@@ -13,7 +13,9 @@ terraform {
   }
 }
 
-provider "cloudflare" {}
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
+}
 
 resource "cloudflare_record" "oracle" {
   zone_id = var.dns_zone_id
