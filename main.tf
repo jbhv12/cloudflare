@@ -27,8 +27,8 @@ resource "cloudflare_record" "oracle" {
 
 resource "cloudflare_record" "mx_jay10" {
   zone_id  = var.dns_zone_id
-  name     = "@"
-  content    = "jay10mx.zoho.in"
+  name     = "jay"
+  content    = "mx.zoho.in"
   type     = "MX"
   priority = 10
   ttl      = 300
@@ -36,8 +36,8 @@ resource "cloudflare_record" "mx_jay10" {
 
 resource "cloudflare_record" "mx_jay20" {
   zone_id  = var.dns_zone_id
-  name     = "@"
-  content    = "jay20mx2.zoho.in"
+  name     = "jay"
+  content    = "mx2.zoho.in"
   type     = "MX"
   priority = 20
   ttl      = 300
@@ -45,8 +45,8 @@ resource "cloudflare_record" "mx_jay20" {
 
 resource "cloudflare_record" "mx_jay50" {
   zone_id  = var.dns_zone_id
-  name     = "@"
-  content    = "jay50mx3.zoho.in"
+  name     = "jay"
+  content    = "mx3.zoho.in"
   type     = "MX"
   priority = 50
   ttl      = 300
@@ -54,7 +54,7 @@ resource "cloudflare_record" "mx_jay50" {
 
 resource "cloudflare_record" "spf_record" {
   zone_id = var.dns_zone_id
-  name    = "@"
+  name    = "jay"
   content   = "v=spf1 include:zoho.in ~all"
   type    = "TXT"
   ttl     = 300
