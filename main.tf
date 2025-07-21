@@ -1,4 +1,10 @@
 terraform {
+  cloud {
+    organization = "jbhv12"
+    workspaces {
+      name = "cloudflare-dns"
+    }
+  }
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
@@ -8,11 +14,6 @@ terraform {
 }
 
 provider "cloudflare" {}
-
-# resource "cloudflare_zone" "domain" {
-#   account_id = var.cloudflare_account_id
-#   zone       = var.domain_name
-# }
 
 resource "cloudflare_record" "oracle" {
   zone_id = var.dns_zone_id
