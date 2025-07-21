@@ -8,15 +8,9 @@ This project is configured with a GitHub Actions workflow to automatically run `
 
 ### Setup
 
-1.  **Add your Cloudflare Account ID to `terraform.tfvars`:**
+The `cloudflare_account_id` is set to a default value in the Terraform configuration. You only need to add your Cloudflare API token to GitHub secrets.
 
-    Create a file named `terraform.tfvars` in this directory and add your Cloudflare Account ID:
-
-    ```hcl
-    cloudflare_account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
-    ```
-
-2.  **Add your Cloudflare API Token to GitHub Secrets:**
+1.  **Add your Cloudflare API Token to GitHub Secrets:**
 
     Add your Cloudflare API token as a secret in your GitHub repository with the name `CLOUDFLARE_API_TOKEN`.
 
