@@ -17,3 +17,28 @@ variable "domain_name" {
   type        = string
   default     = "is-savvy.dev"
 }
+
+variable "tenancy_ocid" {
+  type      = string
+  sensitive = true
+}
+
+variable "user_ocid" {
+  type      = string
+  sensitive = true
+}
+
+variable "fingerprint" {
+  type      = string
+  sensitive = true
+}
+
+variable "private_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "region" {
+  type      = string
+  default = "ap-mumbai-1"
+}

@@ -10,9 +10,21 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 4"
     }
+    oci = {
+      source  = "oracle/oci"
+      version = "~> 5"
+    }
   }
 }
 
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
+}
+
+provider "oci" {
+  tenancy_ocid     = var.tenancy_ocid
+  user_ocid        = var.user_ocid
+  fingerprint      = var.fingerprint
+  private_key = var.private_key
+  region           = var.region
 }
