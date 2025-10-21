@@ -25,6 +25,6 @@ provider "oci" {
   tenancy_ocid     = var.tenancy_ocid
   user_ocid        = var.user_ocid
   fingerprint      = var.fingerprint
-  private_key = trimspace(replace(var.private_key, "\r\n", "\n"))
+  private_key = trimspace(base64decode(replace(var.private_key, "\r\n", "")))
   region           = var.region
 }
