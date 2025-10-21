@@ -30,15 +30,18 @@ jobs:
         cli_config_credentials_token: ${{ secrets.TF_TOKEN_APP_TERRAFORM_IO }}
 
     - name: Terraform Init
-      run: |
-        terraform version
-        terraform init -upgrade
+      run: terraform init -upgrade
     
     - name: Terraform Import (Manual Step - Requires Update)
-      run: |
-        terraform version
-        terraform import oci_core_instance.my_vm ocid1.instance.oc1.ap-mumbai-1.anrg6ljrh3z5zbqcnpdpps6hmolc3qaiy3blmqdc5vo3iml6qwfrrs7ulvza
-
+      run: terraform import oci_core_instance.my_vm ocid1.instance.oc1.ap-mumbai-1.anrg6ljrh3z5zbqcnpdpps6hmolc3qaiy3blmqdc5vo3iml6qwfrrs7ulvza
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        TF_VAR_fingerprint : ${{ secrets.TF_VAR_fingerprint }}
+        TF_VAR_tenancy_ocid: ${{ secrets.TF_VAR_tenancy_ocid }}
+        TF_VAR_user_ocid: ${{ secrets.TF_VAR_user_ocid }}
+        TF_VAR_private_key: ${{ secrets.TF_VAR_private_key }}
+  
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: terraform plan # apply -auto-approve
