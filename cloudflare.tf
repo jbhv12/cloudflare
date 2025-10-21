@@ -40,3 +40,9 @@ resource "cloudflare_record" "spf_record" {
   type    = "TXT"
   ttl     = 300
 }
+
+resource "oci_core_instance" "my_vm" {
+  # This is a placeholder for your OCI VM.
+  # After importing, run 'terraform plan' and then update this block
+  # with the actual attributes of your VM from the state.
+}
