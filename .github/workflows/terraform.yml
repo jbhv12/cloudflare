@@ -31,6 +31,9 @@ jobs:
 
     - name: Terraform Init
       run: terraform init
+    
+    - name: Terraform Import (Manual Step - Requires Update)
+      run: terraform import oci_core_instance.my_vm ocid1.instance.oc1.ap-mumbai-1.anrg6ljrh3z5zbqcnpdpps6hmolc3qaiy3blmqdc5vo3iml6qwfrrs7ulvza
 
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'

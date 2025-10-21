@@ -45,4 +45,6 @@ resource "oci_core_instance" "my_vm" {
   # This is a placeholder for your OCI VM.
   # After importing, run 'terraform plan' and then update this block
   # with the actual attributes of your VM from the state.
+  compartment_id      = "ocid1.compartment.oc1..exampleuniqueID"
+  availability_domain = "EXAMPLE_AD_1"
 }
