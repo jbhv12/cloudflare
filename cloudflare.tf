@@ -1,7 +1,7 @@
 resource "cloudflare_record" "oracle" {
   zone_id = var.dns_zone_id
   name    = "oracle"
-  content   = "152.67.2.209"
+  content   = oci_core_instance.vm_instance.public_ip
   type    = "A"
   proxied = false
 }
