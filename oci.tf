@@ -28,21 +28,21 @@ data "oci_core_images" "ubuntu_latest" {
 resource "oci_core_virtual_network" "vcn" {
   cidr_block     = "10.0.0.0/16"
   compartment_id = local.root_compartment_ocid
-  display_name   = "example-vcn"
-  dns_label      = "examplevcn"
+  display_name   = "primary-vcn"
+  dns_label      = "primaryvcn"
 }
 
 resource "oci_core_internet_gateway" "igw" {
   compartment_id = local.root_compartment_ocid
   vcn_id         = oci_core_virtual_network.vcn.id
-  display_name   = "example-igw"
+  display_name   = "primary-igw"
   enabled        = true
 }
 
 resource "oci_core_route_table" "rt" {
   compartment_id = local.root_compartment_ocid
   vcn_id         = oci_core_virtual_network.vcn.id
-  display_name   = "example-rt"
+  display_name   = "primary-rt"
   route_rules {
     network_entity_id = oci_core_internet_gateway.igw.id
     destination       = "0.0.0.0/0"
@@ -53,7 +53,7 @@ resource "oci_core_route_table" "rt" {
 resource "oci_core_security_list" "sec_list" {
   compartment_id = local.root_compartment_ocid
   vcn_id         = oci_core_virtual_network.vcn.id
-  display_name   = "example-sec-list"
+  display_name   = "primary-sec-list"
 
   ingress_security_rules {
     protocol    = "all"
@@ -70,11 +70,11 @@ resource "oci_core_subnet" "subnet" {
   cidr_block                 = "10.0.1.0/24"
   compartment_id             = local.root_compartment_ocid
   vcn_id                     = oci_core_virtual_network.vcn.id
-  display_name               = "example-subnet"
+  display_name               = "primary-subnet"
   prohibit_public_ip_on_vnic = false
   route_table_id             = oci_core_route_table.rt.id
   security_list_ids          = [oci_core_security_list.sec_list.id]
-  dns_label                  = "examplesubnet"
+  dns_label                  = "primarysubnet"
 }
 
 resource "oci_core_instance" "vm_instance" {
@@ -89,13 +89,14 @@ resource "oci_core_instance" "vm_instance" {
   }
 
   source_details {
-    source_type = "image"
-    source_id   = data.oci_core_images.ubuntu_latest.images[0].id
+    source_type             = "image"
+    source_id               = data.oci_core_images.ubuntu_latest.images[0].id
+    boot_volume_size_in_gbs = 200
   }
 
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
   }
 
-  display_name = "example-instance"
+  display_name = "primary-instance"
 }
