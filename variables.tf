@@ -42,3 +42,8 @@ variable "region" {
   type      = string
   default = "ap-mumbai-1"
 }
+
+variable "vm_password" {
+  type      = string
+  sensitive = true
+}

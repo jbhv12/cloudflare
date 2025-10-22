@@ -104,6 +104,14 @@ resource "oci_core_instance" "vm_instance" {
 
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
+    user_data = base64encode(<<EOF
+#cloud-config
+chpasswd:
+  list: |
+    ubuntu:${var.vm_password}
+  expire: False
+EOF
+    )
   }
 
   display_name = "primary-instance"
