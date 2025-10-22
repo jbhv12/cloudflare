@@ -82,7 +82,10 @@ jobs:
           echo "[small]" >> inventory.ini
           echo "${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
-      - name: Run Ansible playbook
+      - name: Run Ansible playbooks
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
-        run: ansible-playbook -i inventory.ini ansible/docker_setup.yml
+        run: |
+          ansible-playbook -i inventory.ini ansible/docker_setup.yml
+          # ansible-playbook -i inventory.ini ansible/swarm_setup.yml
+          ansible-playbook -i inventory.ini ansible/npm_setup.yml

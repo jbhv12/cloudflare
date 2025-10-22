@@ -1,0 +1,98 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    manager_host: "{{ groups['big'][0] }}"
+
+  tasks:
+    - name: Check local Swarm state
+      ansible.builtin.command: docker info --format '{% raw %}{{.Swarm.LocalNodeState}}{% endraw %}'
+      register: swarm_state
+      changed_when: false
+      failed_when: false
+
+    - name: Normalize swarm state
+      ansible.builtin.set_fact:
+        swarm_state_norm: "{{ (swarm_state.stdout | default('') | trim | lower) }}"
+
+    - name: Initialize Docker Swarm on manager
+      ansible.builtin.command: docker swarm init --advertise-addr {{ (ansible_host | default(ansible_default_ipv4.address | default(inventory_hostname))) }}
+      when:
+        - inventory_hostname == manager_host
+        - swarm_state_norm != 'active'
+      register: swarm_init_result
+      changed_when: "'already part of a swarm' not in (swarm_init_result.stderr | default('') | lower)"
+
+    - name: Get worker join token from manager
+      ansible.builtin.command: docker swarm join-token -q worker
+      when: inventory_hostname == manager_host
+      register: worker_join_token
+
+    - name: Publish swarm facts on manager host
+      ansible.builtin.set_fact:
+        swarm_manager_addr: "{{ ansible_host | default(ansible_default_ipv4.address | default(inventory_hostname)) }}"
+        swarm_worker_token: "{{ worker_join_token.stdout }}"
+      when: inventory_hostname == manager_host
+
+    - name: Get remote managers on workers (if in a swarm)
+      ansible.builtin.command: docker info --format '{% raw %}{{range .Swarm.RemoteManagers}}{{.Addr}} {{end}}{% endraw %}'
+      register: remote_mgrs
+      changed_when: false
+      failed_when: false
+      when:
+        - inventory_hostname in groups['small']
+        - swarm_state_norm == 'active'
+
+    - name: Determine if worker is joined to the correct manager
+      ansible.builtin.set_fact:
+        joined_correct_manager: "{{ (remote_mgrs.stdout | default('')) is search(hostvars[manager_host].swarm_manager_addr ~ ':2377') }}"
+      when:
+        - inventory_hostname in groups['small']
+        - swarm_state_norm == 'active'
+
+    - name: Leave wrong swarm on workers
+      ansible.builtin.command: docker swarm leave --force
+      when:
+        - inventory_hostname in groups['small']
+        - swarm_state_norm == 'active'
+        - not joined_correct_manager | default(false)
+
+    - name: Join Docker Swarm on workers
+      ansible.builtin.command: >
+        docker swarm join
+        --token {{ hostvars[manager_host].swarm_worker_token }}
+        {{ hostvars[manager_host].swarm_manager_addr }}:2377
+      register: join_result
+      retries: 5
+      delay: 10
+      until: join_result.rc == 0 or ('already part of a swarm' in (join_result.stderr | lower))
+      failed_when: join_result.rc != 0 and ('already part of a swarm' not in (join_result.stderr | lower))
+      changed_when: join_result.rc == 0
+      when:
+        - inventory_hostname in groups['small']
+        - swarm_state_norm != 'active' or (swarm_state_norm == 'active' and not joined_correct_manager | default(false))
+
+    - name: Recheck Swarm state after potential join (workers)
+      ansible.builtin.command: docker info --format '{% raw %}{{.Swarm.LocalNodeState}}{% endraw %}'
+      register: swarm_state_after
+      changed_when: false
+      failed_when: false
+      when:
+        - inventory_hostname in groups['small']
+
+    - name: Normalize post-join swarm state (workers)
+      ansible.builtin.set_fact:
+        swarm_state_norm_after: "{{ (swarm_state_after.stdout | default('') | trim | lower) }}"
+      when:
+        - inventory_hostname in groups['small']
+
+    - name: Tag 'big' instance as 'big'
+      ansible.builtin.command: docker node update --label-add node_type=big {{ ansible_hostname }}
+      when:
+        - inventory_hostname == manager_host
+
+    - name: Tag 'small' instance as 'small'
+      ansible.builtin.command: docker node update --label-add node_type=small {{ ansible_hostname }}
+      when:
+        - inventory_hostname in groups['small']
+        - (swarm_state_norm_after | default(swarm_state_norm)) == 'active'
