@@ -51,7 +51,7 @@ resource "oci_core_security_list" "sec_list" {
   display_name   = "primary-sec-list"
 
   ingress_security_rules {
-    protocol = "6" # TCP
+    protocol = "6"
     source   = "0.0.0.0/0"
 
     tcp_options {
@@ -61,7 +61,7 @@ resource "oci_core_security_list" "sec_list" {
   }
 
   ingress_security_rules {
-    protocol = "6" # TCP
+    protocol = "6"
     source   = "0.0.0.0/0"
 
     tcp_options {
@@ -71,12 +71,52 @@ resource "oci_core_security_list" "sec_list" {
   }
 
   ingress_security_rules {
-    protocol = "6" # TCP
+    protocol = "6"
     source   = "0.0.0.0/0"
 
     tcp_options {
       min = 443
       max = 443
+    }
+  }
+
+  ingress_security_rules {
+    protocol = "6"
+    source   = "0.0.0.0/0"
+
+    tcp_options {
+      min = 2377
+      max = 2377
+    }
+  }
+
+  ingress_security_rules {
+    protocol = "6"
+    source   = "0.0.0.0/0"
+
+    tcp_options {
+      min = 7946
+      max = 7946
+    }
+  }
+
+  ingress_security_rules {
+    protocol = "17"
+    source   = "0.0.0.0/0"
+
+    udp_options {
+      min = 7946
+      max = 7946
+    }
+  }
+
+  ingress_security_rules {
+    protocol = "17"
+    source   = "0.0.0.0/0"
+
+    udp_options {
+      min = 4789
+      max = 4789
     }
   }
 
