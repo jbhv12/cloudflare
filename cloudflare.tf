@@ -40,3 +40,7 @@ resource "cloudflare_record" "spf_record" {
   type    = "TXT"
   ttl     = 300
 }
+
+output "instance_ip" {
+  value = oci_core_instance.vm_instance.public_ip
+}
