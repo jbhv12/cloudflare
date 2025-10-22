@@ -51,8 +51,33 @@ resource "oci_core_security_list" "sec_list" {
   display_name   = "primary-sec-list"
 
   ingress_security_rules {
-    protocol    = "all"
-    source = "0.0.0.0/0"
+    protocol = "6" # TCP
+    source   = "0.0.0.0/0"
+
+    tcp_options {
+      min = 22
+      max = 22
+    }
+  }
+
+  ingress_security_rules {
+    protocol = "6" # TCP
+    source   = "0.0.0.0/0"
+
+    tcp_options {
+      min = 80
+      max = 80
+    }
+  }
+
+  ingress_security_rules {
+    protocol = "6" # TCP
+    source   = "0.0.0.0/0"
+
+    tcp_options {
+      min = 443
+      max = 443
+    }
   }
 
   egress_security_rules {
@@ -73,7 +98,7 @@ resource "oci_core_subnet" "subnet" {
 }
 
 resource "oci_core_instance" "vm_instance" {
-  count = 3
+  count = 2
   compartment_id      = local.root_compartment_ocid
   availability_domain = local.ad1_name
   shape               = "VM.Standard.E2.1.Micro"
@@ -87,7 +112,7 @@ resource "oci_core_instance" "vm_instance" {
   source_details {
     source_type             = "image"
     source_id               = data.oci_core_images.ubuntu_latest.images[0].id
-    boot_volume_size_in_gbs = 50
+    boot_volume_size_in_gbs = count.index == 0 ? 150 : 50
   }
 
   metadata = {

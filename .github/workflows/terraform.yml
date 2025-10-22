@@ -79,4 +79,4 @@ jobs:
       - name: Run Ansible playbook
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
-        run: ansible-playbook -i inventory.ini ansible/playbook.yml
+        run: ansible-playbook -i inventory.ini ansible/docker_setup.yml
