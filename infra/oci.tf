@@ -73,7 +73,7 @@ resource "oci_core_subnet" "subnet" {
 }
 
 resource "oci_core_instance" "vm_instance" {
-  count = 2
+  count = 3
   compartment_id      = local.root_compartment_ocid
   availability_domain = local.ad1_name
   shape               = "VM.Standard.E2.1.Micro"
