@@ -1,7 +1,4 @@
-resource "tls_private_key" "ssh_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
+
 
 data "oci_identity_tenancy" "tenancy" {
   tenancy_id = var.tenancy_ocid
@@ -95,22 +92,8 @@ resource "oci_core_instance" "vm_instance" {
   }
 
   metadata = {
-    ssh_authorized_keys = tls_private_key.ssh_key.public_key_openssh
-    user_data = base64encode(<<EOF
-#cloud-config
-chpasswd:
-  list: |
-    ubuntu:${var.vm_password}
-  expire: False
-EOF
-    )
+    ssh_authorized_keys = var.ssh_public_key
   }
 
   display_name = "primary-instance"
-}
-
-output "private_key" {
-  description = "The private key for SSH access to the VM instance."
-  value       = tls_private_key.ssh_key.private_key_pem
-  sensitive   = true
 }
