@@ -85,6 +85,11 @@
       register: swarm_init_result
       when: inventory_hostname in groups['big']
 
+    - name: Set manager address fact
+      ansible.builtin.set_fact:
+        manager_address: "{{ ansible_host }}"
+      when: inventory_hostname in groups['big']
+
     - name: Get Docker Swarm worker join token from 'big' instance
       ansible.builtin.command: docker swarm join-token -q worker
       register: worker_join_token
@@ -96,7 +101,7 @@
       when: inventory_hostname in groups['big']
 
     - name: Join Docker Swarm on the 'small' instance
-      ansible.builtin.command: docker swarm join --token {{ hostvars[groups['big'][0]].docker_swarm_worker_token }} {{ hostvars[groups['big'][0]].ansible_host }}:2377
+      ansible.builtin.command: docker swarm join --token {{ hostvars[groups['big'][0]].docker_swarm_worker_token }} {{ hostvars[groups['big'][0]].manager_address }}:2377
       when: inventory_hostname in groups['small']
 
     - name: Tag 'big' instance as 'big'
