@@ -1,14 +1,16 @@
----
 - hosts: big
   become: yes
 
   tasks:
-    - name: Copy npm directory to manager
+    - name: Copy apps directory to target
       ansible.builtin.copy:
-        src: ../apps/npm
-        dest: /home/{{ ansible_user }}/npm
-
-    - name: Run npm docker compose
+        src: "{{ playbook_dir }}/../apps/"
+        dest: "/home/{{ ansible_user }}/apps/"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: preserve
+    
+    - name: Run Docker Compose
       ansible.builtin.shell: docker compose up -d
       args:
-        chdir: /home/{{ ansible_user }}/npm
+        chdir: "/home/{{ ansible_user }}/apps/npm"
