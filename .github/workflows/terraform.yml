@@ -42,12 +42,12 @@ jobs:
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: terraform apply -auto-approve
 
-    - name: Get Instance IP
-      id: get_ip
-      run: echo "instance_ip=$(terraform output -raw instance_ip)" >> "$GITHUB_OUTPUT"
+    - name: Get Instance IPs
+      id: get_ips
+      run: echo "instance_public_ips=$(terraform output -json instance_public_ips)" >> "$GITHUB_OUTPUT"
 
     outputs:
-      instance_ip: ${{ steps.get_ip.outputs.instance_ip }}
+      instance_public_ips: ${{ steps.get_ips.outputs.instance_public_ips }}
 
   ansible:
     name: Ansible
@@ -67,14 +67,22 @@ jobs:
           install -m 700 -d ~/.ssh
           echo "$SSH_KEY_B64" | base64 -d > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ needs.terraform.outputs.instance_ip }} >> ~/.ssh/known_hosts
+          
+          # Add all instance IPs to known_hosts
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | jq -r '.[]')
+          for ip in $INSTANCES_IPS; do
+            ssh-keyscan -H $ip >> ~/.ssh/known_hosts
+          done
 
       - name: Create Ansible inventory
         run: |
-          {
-            echo "[instance]"
-            echo "${{ needs.terraform.outputs.instance_ip }} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa"
-          } > inventory.ini
+          INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | jq -r '.[]'))
+          
+          echo "[big]" > inventory.ini
+          echo "${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          
+          echo "[small]" >> inventory.ini
+          echo "${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
       - name: Run Ansible playbook
         env:

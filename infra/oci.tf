@@ -122,8 +122,8 @@ resource "oci_core_instance" "vm_instance" {
   display_name = "primary-instance"
 }
 
-output "instance_ip" {
-  value = oci_core_instance.vm_instance[0].public_ip
+output "instance_public_ips" {
+  value = oci_core_instance.vm_instance.*.public_ip
 }
 
 # base64 -i "/Users/jbhv12/Library/Mobile Documents/com~apple~CloudDocs/Documents/keys/oracle-vm-keys/vm" | tr -d '\n' | pbcopy
