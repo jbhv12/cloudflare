@@ -73,6 +73,7 @@ resource "oci_core_subnet" "subnet" {
 }
 
 resource "oci_core_instance" "vm_instance" {
+  count = 2
   compartment_id      = local.root_compartment_ocid
   availability_domain = local.ad1_name
   shape               = "VM.Standard.E2.1.Micro"
@@ -86,7 +87,7 @@ resource "oci_core_instance" "vm_instance" {
   source_details {
     source_type             = "image"
     source_id               = data.oci_core_images.ubuntu_latest.images[0].id
-    boot_volume_size_in_gbs = 200
+    boot_volume_size_in_gbs = 50
   }
 
   metadata = {
@@ -97,7 +98,7 @@ resource "oci_core_instance" "vm_instance" {
 }
 
 output "instance_ip" {
-  value = oci_core_instance.vm_instance.public_ip
+  value = oci_core_instance.vm_instance[0].public_ip
 }
 
 # base64 -i "/Users/jbhv12/Library/Mobile Documents/com~apple~CloudDocs/Documents/keys/oracle-vm-keys/vm" | tr -d '\n' | pbcopy
