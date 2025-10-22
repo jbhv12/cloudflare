@@ -27,7 +27,7 @@
 
     - name: Add Docker GPG key (keyring file)
       ansible.builtin.shell: |
-        set -euo pipefail
+        set -eu
         install -m 0755 -d /usr/share/keyrings
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
           | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
