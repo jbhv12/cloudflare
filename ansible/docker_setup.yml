@@ -88,41 +88,40 @@
       changed_when: false
       failed_when: false
 
-
-    # ----- MANAGER (run once on the first 'big' host) -----
-    - name: Initialize Docker Swarm on manager (first 'big' host)
-      ansible.builtin.command: docker swarm init --advertise-addr {{ ansible_host }}
+    # ---------- MANAGER (first 'big' host) ----------
+    - name: Initialize Docker Swarm on manager
+      ansible.builtin.command: docker swarm init --advertise-addr {{ (ansible_host | default(ansible_default_ipv4.address | default(inventory_hostname))) }}
       when:
         - inventory_hostname == manager_host
         - swarm_state.stdout != 'active'
       register: swarm_init_result
-      changed_when: "'This node is already part of a swarm' not in swarm_init_result.stderr|default('')"
+      changed_when: "'This node is already part of a swarm' not in (swarm_init_result.stderr | default(''))"
 
     - name: Get worker join token from manager
       ansible.builtin.command: docker swarm join-token -q worker
       when: inventory_hostname == manager_host
       register: worker_join_token
 
-    # Store the token & manager address as global (delegated) facts on localhost
-    - name: Publish swarm facts for all hosts to read
+    # Compute and PUBLISH facts ON THE MANAGER HOST so all hosts can read hostvars[manager_host].*
+    - name: Publish swarm facts on manager host
       ansible.builtin.set_fact:
+        swarm_manager_addr: "{{ ansible_host | default(ansible_default_ipv4.address | default(inventory_hostname)) }}"
         swarm_worker_token: "{{ worker_join_token.stdout }}"
-        swarm_manager_addr: "{{ hostvars[manager_host].ansible_host }}"
       when: inventory_hostname == manager_host
-      delegate_to: localhost
+      delegate_to: "{{ manager_host }}"
       delegate_facts: true
 
-    # ----- WORKERS ('small' group) -----
+    # ---------- WORKERS ('small' group) ----------
     - name: Join Docker Swarm on workers
       ansible.builtin.command: >
         docker swarm join
-        --token {{ hostvars['localhost'].swarm_worker_token }}
-        {{ hostvars['localhost'].swarm_manager_addr }}:2377
+        --token {{ hostvars[manager_host].swarm_worker_token }}
+        {{ hostvars[manager_host].swarm_manager_addr }}:2377
       when:
         - inventory_hostname in groups['small']
         - swarm_state.stdout != 'active'
 
-    # ----- OPTIONAL LABELS -----
+    # ---------- LABELS (optional) ----------
     - name: Tag 'big' instance as 'big'
       ansible.builtin.command: docker node update --label-add node_type=big {{ ansible_hostname }}
       when:
