@@ -1,6 +1,6 @@
-variable "ssh_public_key" {
-  type = string
-  default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM1cPNrK+VUGznUjnAJVtj2yA4ChyuQYz/J42rVfAtKG jay@laptop"
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
 }
 
 data "oci_identity_tenancy" "tenancy" {
@@ -95,7 +95,7 @@ resource "oci_core_instance" "vm_instance" {
   }
 
   metadata = {
-    ssh_authorized_keys = var.ssh_public_key
+    ssh_authorized_keys = tls_private_key.ssh_key.public_key_openssh
     user_data = base64encode(<<EOF
 #cloud-config
 chpasswd:
@@ -107,4 +107,10 @@ EOF
   }
 
   display_name = "primary-instance"
+}
+
+output "private_key" {
+  description = "The private key for SSH access to the VM instance."
+  value       = tls_private_key.ssh_key.private_key_pem
+  sensitive   = true
 }
