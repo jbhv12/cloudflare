@@ -1,3 +1,4 @@
+---
 - hosts: all
   become: yes
   tasks:
@@ -17,36 +18,24 @@
         state: present
         update_cache: yes
 
-    # Map Ansible arch -> Debian arch for Docker repo
-    - name: Set Docker repo architecture
-      set_fact:
-        docker_repo_arch: >-
-          {{ 'amd64' if ansible_architecture in ['x86_64'] else
-             'arm64' if ansible_architecture in ['aarch64','arm64'] else
-             'armhf' if ansible_architecture in ['armv7l'] else
-             ansible_architecture }}
-
-    - name: Add Docker GPG key (keyring)
-      shell: |
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-        | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    - name: Add Docker GPG key
+      ansible.builtin.shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
       args:
         creates: /usr/share/keyrings/docker-archive-keyring.gpg
 
-    # Clean up the previously written malformed file
-    - name: Remove malformed docker.list if present
-      file:
+    - name: Ensure old docker.list is removed
+      ansible.builtin.file:
         path: /etc/apt/sources.list.d/docker.list
         state: absent
 
-    - name: Add Docker apt repository (properly templated)
-      apt_repository:
-        filename: docker
-        repo: >-
-          deb [arch={{ docker_repo_arch }} signed-by=/usr/share/keyrings/docker-archive-keyring.gpg]
-          https://download.docker.com/linux/{{ ansible_distribution | lower }}
-          {{ ansible_distribution_release }} stable
-        state: present
+    - name: Add Docker repository
+      ansible.builtin.shell: 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list'
+      args:
+        creates: /etc/apt/sources.list.d/docker.list
+
+    - name: Update apt cache after adding Docker repo
+      apt:
         update_cache: yes
 
     - name: Install Docker Engine and CLI
@@ -59,7 +48,7 @@
           - docker-compose-plugin
         state: latest
 
-    - name: Enable and start Docker
+    - name: Enable and start Docker service
       systemd:
         name: docker
         state: started
@@ -74,12 +63,13 @@
         var: docker_version.stdout
 
     - name: Copy docker-compose.yml to target
-      copy:
+      ansible.builtin.copy:
         src: ../compose/docker-compose.yml
         dest: /home/{{ ansible_user }}/docker-compose.yml
         mode: '0644'
 
     - name: Run docker compose up
-      shell: docker compose -f /home/{{ ansible_user }}/docker-compose.yml up -d
+      ansible.builtin.shell: |
+        docker compose -f /home/{{ ansible_user }}/docker-compose.yml up -d
       args:
         chdir: /home/{{ ansible_user }}
