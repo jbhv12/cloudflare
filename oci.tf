@@ -56,16 +56,8 @@ resource "oci_core_security_list" "sec_list" {
   display_name   = "primary-sec-list"
 
   ingress_security_rules {
-    description = "Allow SSH"
-    protocol    = "6"
-    source      = "0.0.0.0/0"
-
-    tcp_options {
-      source_port_range {
-        min = 22
-        max = 22
-      }
-    }
+    protocol    = "all"
+    source = "0.0.0.0/0"
   }
 
   egress_security_rules {
