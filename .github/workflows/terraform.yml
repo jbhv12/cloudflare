@@ -59,6 +59,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install jq
+        run: apt-get update && apt-get install -y jq
+
       # Write SSH key from base64 secret (no newline headaches)
       - name: Write SSH key
         env:
