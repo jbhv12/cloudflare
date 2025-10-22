@@ -1,6 +1,8 @@
 ---
 - hosts: all
   become: yes
+  vars:
+    manager_host: "{{ groups['big'][0] }}"
 
   pre_tasks:
     - name: Remove any old docker.list before apt cache runs
@@ -80,34 +82,54 @@
       args:
         chdir: /home/{{ ansible_user }}
 
-    - name: Initialize Docker Swarm on the 'big' instance
+    - name: Check local Swarm state
+      ansible.builtin.command: docker info --format '{% raw %}{{.Swarm.LocalNodeState}}{% endraw %}'
+      register: swarm_state
+      changed_when: false
+      failed_when: false
+
+
+    # ----- MANAGER (run once on the first 'big' host) -----
+    - name: Initialize Docker Swarm on manager (first 'big' host)
       ansible.builtin.command: docker swarm init --advertise-addr {{ ansible_host }}
+      when:
+        - inventory_hostname == manager_host
+        - swarm_state.stdout != 'active'
       register: swarm_init_result
-      when: inventory_hostname in groups['big']
+      changed_when: "'This node is already part of a swarm' not in swarm_init_result.stderr|default('')"
 
-    - name: Set manager address fact
-      ansible.builtin.set_fact:
-        manager_address: "{{ ansible_host }}"
-      when: inventory_hostname in groups['big']
-
-    - name: Get Docker Swarm worker join token from 'big' instance
+    - name: Get worker join token from manager
       ansible.builtin.command: docker swarm join-token -q worker
+      when: inventory_hostname == manager_host
       register: worker_join_token
-      when: inventory_hostname in groups['big']
 
-    - name: Set fact for worker join token
+    # Store the token & manager address as global (delegated) facts on localhost
+    - name: Publish swarm facts for all hosts to read
       ansible.builtin.set_fact:
-        docker_swarm_worker_token: "{{ worker_join_token.stdout }}"
-      when: inventory_hostname in groups['big']
+        swarm_worker_token: "{{ worker_join_token.stdout }}"
+        swarm_manager_addr: "{{ hostvars[manager_host].ansible_host }}"
+      when: inventory_hostname == manager_host
+      delegate_to: localhost
+      delegate_facts: true
 
-    - name: Join Docker Swarm on the 'small' instance
-      ansible.builtin.command: docker swarm join --token {{ hostvars[groups['big'][0]].docker_swarm_worker_token }} {{ hostvars[groups['big'][0]].manager_address }}:2377
-      when: inventory_hostname in groups['small']
+    # ----- WORKERS ('small' group) -----
+    - name: Join Docker Swarm on workers
+      ansible.builtin.command: >
+        docker swarm join
+        --token {{ hostvars['localhost'].swarm_worker_token }}
+        {{ hostvars['localhost'].swarm_manager_addr }}:2377
+      when:
+        - inventory_hostname in groups['small']
+        - swarm_state.stdout != 'active'
 
+    # ----- OPTIONAL LABELS -----
     - name: Tag 'big' instance as 'big'
       ansible.builtin.command: docker node update --label-add node_type=big {{ ansible_hostname }}
-      when: inventory_hostname in groups['big']
+      when:
+        - inventory_hostname == manager_host
 
     - name: Tag 'small' instance as 'small'
       ansible.builtin.command: docker node update --label-add node_type=small {{ ansible_hostname }}
-      when: inventory_hostname in groups['small']
+      when:
+        - inventory_hostname in groups['small']
+        - swarm_state.stdout == 'active'
