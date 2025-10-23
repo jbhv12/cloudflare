@@ -57,6 +57,8 @@ jobs:
     env:
       NPM_USER: ${{ secrets.NPM_USER }}
       NPM_PASSWORD: ${{ secrets.NPM_PASSWORD }}
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ZONE_ID: "930ad404e3042fe25ab656fd3a2f3927"
 
     steps:
       - uses: actions/checkout@v4
@@ -88,9 +90,7 @@ jobs:
       - name: Run Ansible playbooks
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
-          NPM_USER: ${{ secrets.NPM_USER }}
-          NPM_PASSWORD: ${{ secrets.NPM_PASSWORD }}
         run: |
           # ansible-playbook -i inventory.ini ansible/docker_setup.yml
           # ansible-playbook -i inventory.ini ansible/swarm_setup.yml
-          ansible-playbook -i inventory.ini ansible/npm_setup.yml -e "npm_user=$NPM_USER" -e "npm_password=$NPM_PASSWORD"
+          ansible-playbook -i inventory.ini ansible/npm_setup.yml -e "npm_user=$NPM_USER" -e "npm_password=$NPM_PASSWORD" -e "cf_api_token=$CF_API_TOKEN" -e "cf_zone_id=$CF_ZONE_ID"

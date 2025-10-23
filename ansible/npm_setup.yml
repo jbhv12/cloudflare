@@ -10,11 +10,6 @@
         group: "{{ ansible_user }}"
         mode: preserve
     
-    - name: Debug - Print NPM credentials
-      ansible.builtin.debug:
-        msg: |
-          NPM_USER: {{ npm_user }}
-    
     - name: Run Docker Compose
       ansible.builtin.shell: |
         export NPM_USER="{{ npm_user }}"
@@ -49,10 +44,6 @@
       set_fact:
         api_token: "{{ (token_response.content | from_json).token }}"
 
-    - name: Display the token
-      debug:
-        var: api_token
-
     - name: Create proxy host
       ansible.builtin.uri:
         url: "http://localhost:81/api/nginx/proxy-hosts"
@@ -83,9 +74,41 @@
       register: proxy_creation
       ignore_errors: true
 
+    - name: Create TLS certificate
+      ansible.builtin.uri:
+        url: "http://localhost:81/api/nginx/certificates"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{ api_token }}"
+        body_format: json
+        body:
+          provider: "letsencrypt"
+          nice_name: "*.o.is-savvy.dev"
+          domain_names:
+            - "o.is-savvy.dev"
+            - "*.o.is-savvy.dev"
+          meta:
+            letsencrypt_email: "jbhv12@gmail.com"
+            letsencrypt_agree: true
+            dns_challenge: true
+            dns_provider: "cloudflare"
+            dns_provider_credentials: "dns_cloudflare_api_token={{ cf_api_token }}"
+            propagation_seconds: 120
+        status_code: [200, 201]
+      register: certificate_creation
+      ignore_errors: true
+
+    - name: Fail if certificate creation failed for other reasons
+      ansible.builtin.fail:
+        msg: "Failed to create certificate: {{ certificate_creation.msg }}"
+      when:
+        - certificate_creation.failed
+        - "'Certificate already exists' not in certificate_creation.json.error.message"
+
     - name: Fail if proxy host creation failed for other reasons
       ansible.builtin.fail:
         msg: "Failed to create proxy host: {{ proxy_creation.msg }}"
       when:
         - proxy_creation.failed
-        - "'is already in use' not in proxy_creation.json.error.message"
+        - "'is already in use' not in proxy_creation.json.error.message" 
