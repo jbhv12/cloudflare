@@ -112,14 +112,14 @@ resource "oci_core_instance" "vm_instance" {
   source_details {
     source_type             = "image"
     source_id               = data.oci_core_images.ubuntu_latest.images[0].id
-    boot_volume_size_in_gbs = count.index == 0 ? 150 : 50
+    boot_volume_size_in_gbs = count.index == 0 ? 120 : 80
   }
 
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
   }
 
-  display_name = "primary-instance"
+  display_name = count.index == 0 ? "instance-0" : "instance-1"
 }
 
 output "instance_public_ips" {
