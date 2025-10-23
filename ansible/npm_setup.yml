@@ -44,3 +44,31 @@
     - name: Display the token
       debug:
         var: api_token
+
+    - name: Create proxy host
+      ansible.builtin.uri:
+        url: "http://localhost:81/api/nginx/proxy-hosts"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{ api_token }}"
+        body_format: json
+        body:
+          domain_names:
+            - "example.yourdomain.com"
+          forward_scheme: "http"
+          forward_host: "127.0.0.1"
+          forward_port: 8080
+          access_list_id: 0
+          certificate_id: 0
+          ssl_forced: false
+          caching_enabled: false
+          block_exploits: true
+          allow_websocket_upgrade: true
+          http2_support: true
+          hsts_enabled: false
+          hsts_subdomains: false
+          enabled: true
+          advanced_config: ""
+          meta: {}
+        status_code: [200, 201]
