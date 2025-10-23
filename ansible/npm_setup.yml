@@ -44,35 +44,27 @@
       set_fact:
         api_token: "{{ (token_response.content | from_json).token }}"
 
-    - name: Create proxy host
+    - name: Check for existing certificate
       ansible.builtin.uri:
-        url: "http://localhost:81/api/nginx/proxy-hosts"
-        method: POST
+        url: "http://localhost:81/api/nginx/certificates"
+        method: GET
         headers:
-          Content-Type: "application/json"
           Authorization: "Bearer {{ api_token }}"
-        body_format: json
-        body:
-          domain_names:
-            - "example.yourdomain.com"
-          forward_scheme: "http"
-          forward_host: "127.0.0.1"
-          forward_port: 8080
-          access_list_id: 0
-          certificate_id: 0
-          ssl_forced: false
-          caching_enabled: false
-          block_exploits: true
-          allow_websocket_upgrade: true
-          http2_support: true
-          hsts_enabled: false
-          hsts_subdomains: false
-          enabled: true
-          advanced_config: ""
-          meta: {}
-        status_code: [200, 201]
-      register: proxy_creation
-      ignore_errors: true
+        return_content: yes
+        status_code: 200
+      register: existing_certs
+
+    - name: Set cert_domains variable
+      set_fact:
+        cert_domains:
+          - "o.is-savvy.dev"
+          - "*.o.is-savvy.dev"
+
+    - name: Find existing certificate
+      set_fact:
+        found_cert: "{{ item }}"
+      loop: "{{ existing_certs.json }}"
+      when: "cert_domains | sort == item.domain_names | sort"
 
     - name: Create TLS certificate
       ansible.builtin.uri:
@@ -97,14 +89,41 @@
             propagation_seconds: 120
         status_code: [200, 201]
       register: certificate_creation
-      ignore_errors: true
+      when: found_cert is not defined
 
-    - name: Fail if certificate creation failed for other reasons
-      ansible.builtin.fail:
-        msg: "Failed to create certificate: {{ certificate_creation.msg }}"
-      when:
-        - certificate_creation.failed
-        - "'Certificate already exists' not in certificate_creation.json.error.message"
+    - name: Set certificate ID
+      set_fact:
+        cert_id: "{{ found_cert.id if found_cert is defined else certificate_creation.json.id }}"
+
+    - name: Create proxy host
+      ansible.builtin.uri:
+        url: "http://localhost:81/api/nginx/proxy-hosts"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{ api_token }}"
+        body_format: json
+        body:
+          domain_names:
+            - "npm.o.is-savvy.dev"
+          forward_scheme: "http"
+          forward_host: "localhost"
+          forward_port: 81
+          access_list_id: 0
+          certificate_id: "{{ cert_id }}"
+          ssl_forced: true
+          caching_enabled: false
+          block_exploits: true
+          allow_websocket_upgrade: true
+          http2_support: true
+          hsts_enabled: false
+          hsts_subdomains: false
+          enabled: true
+          advanced_config: ""
+          meta: {}
+        status_code: [200, 201]
+      register: proxy_creation
+      ignore_errors: true
 
     - name: Fail if proxy host creation failed for other reasons
       ansible.builtin.fail:
