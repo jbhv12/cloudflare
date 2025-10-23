@@ -10,13 +10,18 @@
         group: "{{ ansible_user }}"
         mode: preserve
     
+    - name: Debug - Print NPM credentials
+      ansible.builtin.debug:
+        msg: |
+          NPM_USER: {{ npm_user }}
+    
     - name: Run Docker Compose
-      ansible.builtin.shell: docker compose up -d
+      ansible.builtin.shell: |
+        export NPM_USER="{{ npm_user }}"
+        export NPM_PASSWORD="{{ npm_password }}"
+        docker compose up -d
       args:
         chdir: "/home/{{ ansible_user }}/apps/npm"
-      environment:
-        NPM_USER: "{{ lookup('env', 'NPM_USER') }}"
-        NPM_PASSWORD: "{{ lookup('env', 'NPM_PASSWORD') }}"
 
     - name: Wait for API to be ready
       ansible.builtin.wait_for:
@@ -31,8 +36,8 @@
         method: POST
         body_format: json
         body:
-          identity: "{{ lookup('env', 'NPM_USER') }}"
-          secret: "{{ lookup('env', 'NPM_PASSWORD') }}"
+          identity: "{{ npm_user }}"
+          secret: "{{ npm_password }}"
           scope: "user"
         headers:
           Content-Type: "application/json"

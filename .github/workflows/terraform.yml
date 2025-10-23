@@ -54,6 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: terraform
     container: ghcr.io/ansible/creator-ee:latest
+    env:
+      NPM_USER: ${{ secrets.NPM_USER }}
+      NPM_PASSWORD: ${{ secrets.NPM_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -90,4 +93,4 @@ jobs:
         run: |
           # ansible-playbook -i inventory.ini ansible/docker_setup.yml
           # ansible-playbook -i inventory.ini ansible/swarm_setup.yml
-          ansible-playbook -i inventory.ini ansible/npm_setup.yml
+          ansible-playbook -i inventory.ini ansible/npm_setup.yml -e "npm_user=$NPM_USER" -e "npm_password=$NPM_PASSWORD"
