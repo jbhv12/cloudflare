@@ -14,3 +14,33 @@
       ansible.builtin.shell: docker compose up -d
       args:
         chdir: "/home/{{ ansible_user }}/apps/npm"
+
+    - name: Wait for API to be ready
+      ansible.builtin.wait_for:
+        host: localhost
+        port: 81
+        delay: 5
+        timeout: 60
+
+    - name: Create API token
+      ansible.builtin.uri:
+        url: "http://localhost:81/api/tokens"
+        method: POST
+        body_format: json
+        body:
+          identity: "admin@example.com"
+          secret: "changeme"
+          scope: "user"
+        headers:
+          Content-Type: "application/json"
+        return_content: yes
+        status_code: 200
+      register: token_response
+
+    - name: Extract token from response
+      set_fact:
+        api_token: "{{ (token_response.content | from_json).token }}"
+
+    - name: Display the token
+      debug:
+        var: api_token
