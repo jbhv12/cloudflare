@@ -14,6 +14,9 @@
       ansible.builtin.shell: docker compose up -d
       args:
         chdir: "/home/{{ ansible_user }}/apps/npm"
+      environment:
+        NPM_USER: "{{ lookup('env', 'NPM_USER') }}"
+        NPM_PASSWORD: "{{ lookup('env', 'NPM_PASSWORD') }}"
 
     - name: Wait for API to be ready
       ansible.builtin.wait_for:
@@ -28,8 +31,8 @@
         method: POST
         body_format: json
         body:
-          identity: "admin@example.com"
-          secret: "changeme"
+          identity: "{{ lookup('env', 'NPM_USER') }}"
+          secret: "{{ lookup('env', 'NPM_PASSWORD') }}"
           scope: "user"
         headers:
           Content-Type: "application/json"
@@ -72,3 +75,12 @@
           advanced_config: ""
           meta: {}
         status_code: [200, 201]
+      register: proxy_creation
+      ignore_errors: true
+
+    - name: Fail if proxy host creation failed for other reasons
+      ansible.builtin.fail:
+        msg: "Failed to create proxy host: {{ proxy_creation.msg }}"
+      when:
+        - proxy_creation.failed
+        - "'is already in use' not in proxy_creation.json.error.message"

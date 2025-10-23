@@ -85,6 +85,8 @@ jobs:
       - name: Run Ansible playbooks
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
+          NPM_USER: ${{ secrets.NPM_USER }}
+          NPM_PASSWORD: ${{ secrets.NPM_PASSWORD }}
         run: |
           # ansible-playbook -i inventory.ini ansible/docker_setup.yml
           # ansible-playbook -i inventory.ini ansible/swarm_setup.yml
