@@ -1,5 +1,13 @@
 - hosts: big
   become: yes
+  vars:
+    proxy_hosts:
+      - domain_names: ["npm.o.is-savvy.dev"]
+        forward_host: "localhost"
+        forward_port: 81
+      - domain_names: ["ai.o.is-savvy.dev"]
+        forward_host: "host.docker.internal"
+        forward_port: 3145
 
   tasks:
     - name: Copy apps directory to target
@@ -95,7 +103,7 @@
       set_fact:
         cert_id: "{{ found_cert.id if found_cert is defined else certificate_creation.json.id }}"
 
-    - name: Create proxy host
+    - name: Create proxy hosts
       ansible.builtin.uri:
         url: "http://localhost:81/api/nginx/proxy-hosts"
         method: POST
@@ -104,11 +112,10 @@
           Authorization: "Bearer {{ api_token }}"
         body_format: json
         body:
-          domain_names:
-            - "npm.o.is-savvy.dev"
+          domain_names: "{{ item.domain_names }}"
           forward_scheme: "http"
-          forward_host: "localhost"
-          forward_port: 81
+          forward_host: "{{ item.forward_host }}"
+          forward_port: "{{ item.forward_port }}"
           access_list_id: 0
           certificate_id: "{{ cert_id }}"
           ssl_forced: true
@@ -122,12 +129,14 @@
           advanced_config: ""
           meta: {}
         status_code: [200, 201]
+      loop: "{{ proxy_hosts }}"
       register: proxy_creation
       ignore_errors: true
 
     - name: Fail if proxy host creation failed for other reasons
       ansible.builtin.fail:
-        msg: "Failed to create proxy host: {{ proxy_creation.msg }}"
+        msg: "Failed to create proxy host {{ item.item.domain_names[0] }}: {{ item.msg }}"
+      loop: "{{ proxy_creation.results }}"
       when:
-        - proxy_creation.failed
-        - "'is already in use' not in proxy_creation.json.error.message" 
+        - item.failed
+        - "'is already in use' not in item.json.error.message" 

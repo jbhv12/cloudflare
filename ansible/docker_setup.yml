@@ -70,9 +70,3 @@
 
     - ansible.builtin.debug:
         var: docker_version.stdout
-
-    - name: Copy docker-compose.yml to target
-      ansible.builtin.copy:
-        src: ../compose/docker-compose.yml
-        dest: /home/{{ ansible_user }}/docker-compose.yml
-        mode: '0644'

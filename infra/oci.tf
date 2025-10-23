@@ -66,7 +66,7 @@ resource "oci_core_security_list" "sec_list" {
 
     tcp_options {
       min = 80
-      max = 81
+      max = 80
     }
   }
 
