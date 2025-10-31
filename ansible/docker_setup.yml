@@ -70,3 +70,19 @@
 
     - ansible.builtin.debug:
         var: docker_version.stdout
+
+    - name: Start Tailscale container
+      community.docker.docker_container:
+        name: tailscaled
+        image: tailscale/tailscale
+        state: started
+        restart_policy: always
+        network_mode: host
+        volumes:
+          - /var/lib:/var/lib
+          - /dev/net/tun:/dev/net/tun
+        capabilities:
+          - net_admin
+          - sys_module
+        env:
+          TS_AUTHKEY: "{{ tailscale_auth_key }}"

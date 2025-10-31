@@ -59,6 +59,7 @@ jobs:
       NPM_PASSWORD: ${{ secrets.NPM_PASSWORD }}
       CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -87,10 +88,13 @@ jobs:
           echo "[small]" >> inventory.ini
           echo "${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
+      - name: Install Ansible Docker collection
+        run: ansible-galaxy collection install community.docker
+
       - name: Run Docker Setup Playbook
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
-        run: ansible-playbook -i inventory.ini ansible/docker_setup.yml
+        run: ansible-playbook -i inventory.ini ansible/docker_setup.yml -e "tailscale_auth_key=$TAILSCALE_AUTH_KEY"
 
       # - name: Run Swarm Setup Playbook
       #   env:
@@ -102,7 +106,7 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
         run: ansible-playbook -i inventory.ini ansible/npm_setup.yml -e "npm_user=$NPM_USER" -e "npm_password=$NPM_PASSWORD" -e "cf_api_token=$CF_API_TOKEN"
 
-      - name: Run Apps
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: 'False'
-        run: ansible-playbook -i inventory.ini ansible/start_apps.yml -e "openai_api_key=$OPENAI_API_KEY" 
+      # - name: Run Apps
+      #   env:
+      #     ANSIBLE_HOST_KEY_CHECKING: 'False'
+      #   run: ansible-playbook -i inventory.ini ansible/start_apps.yml -e "openai_api_key=$OPENAI_API_KEY" 
