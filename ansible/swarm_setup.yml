@@ -4,6 +4,17 @@
   vars:
     manager_host: "{{ groups['big'][0] }}"
 
+  pre_tasks:
+    - name: Get Tailscale IP address
+      ansible.builtin.command: docker exec tailscaled tailscale ip -4
+      register: tailscale_ip_output
+      changed_when: false
+      failed_when: tailscale_ip_output.rc != 0
+
+    - name: Set Tailscale IP fact
+      ansible.builtin.set_fact:
+        tailscale_ip: "{{ tailscale_ip_output.stdout }}"
+
   tasks:
     - name: Check local Swarm state
       ansible.builtin.command: docker info --format '{% raw %}{{.Swarm.LocalNodeState}}{% endraw %}'
@@ -16,7 +27,7 @@
         swarm_state_norm: "{{ (swarm_state.stdout | default('') | trim | lower) }}"
 
     - name: Initialize Docker Swarm on manager
-      ansible.builtin.command: docker swarm init --advertise-addr {{ (ansible_host | default(ansible_default_ipv4.address | default(inventory_hostname))) }}
+      ansible.builtin.command: docker swarm init --advertise-addr {{ tailscale_ip }}
       when:
         - inventory_hostname == manager_host
         - swarm_state_norm != 'active'
@@ -30,7 +41,7 @@
 
     - name: Publish swarm facts on manager host
       ansible.builtin.set_fact:
-        swarm_manager_addr: "{{ ansible_host | default(ansible_default_ipv4.address | default(inventory_hostname)) }}"
+        swarm_manager_addr: "{{ tailscale_ip }}"
         swarm_worker_token: "{{ worker_join_token.stdout }}"
       when: inventory_hostname == manager_host
 

@@ -86,3 +86,16 @@
           - sys_module
         env:
           TS_AUTHKEY: "{{ tailscale_auth_key }}"
+
+    - name: Wait for Tailscale to be ready
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Get Tailscale IP address
+      ansible.builtin.command: docker exec tailscaled tailscale ip -4
+      register: tailscale_ip_output
+      changed_when: false
+
+    - name: Display Tailscale IP address
+      ansible.builtin.debug:
+        var: tailscale_ip_output.stdout
