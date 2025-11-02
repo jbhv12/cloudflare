@@ -71,7 +71,7 @@
     - ansible.builtin.debug:
         var: docker_version.stdout
 
-    - name: Start Tailscale container
+    - name: Start Tailscale container (scoped state dir)
       community.docker.docker_container:
         name: tailscaled
         image: tailscale/tailscale
@@ -79,21 +79,22 @@
         restart_policy: always
         network_mode: host
         volumes:
-          - /var/lib:/var/lib
+          - /var/lib/tailscale:/var/lib/tailscale
           - /dev/net/tun:/dev/net/tun
+          - /etc/machine-id:/etc/machine-id:ro
         capabilities:
           - net_admin
           - sys_module
         env:
           TS_AUTHKEY: "{{ tailscale_auth_key }}"
+          TS_STATE_DIR: /var/lib/tailscale
 
-    - name: Wait for Tailscale to be ready
-      ansible.builtin.pause:
-        seconds: 10
-
-    - name: Get Tailscale IP address
+    - name: Wait for Tailscale IPv4 (robust)
       ansible.builtin.command: docker exec tailscaled tailscale ip -4
       register: tailscale_ip_output
+      retries: 12
+      delay: 5
+      until: tailscale_ip_output.rc == 0 and (tailscale_ip_output.stdout | trim) != ""
       changed_when: false
 
     - name: Display Tailscale IP address

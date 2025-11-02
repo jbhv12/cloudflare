@@ -27,7 +27,10 @@
         swarm_state_norm: "{{ (swarm_state.stdout | default('') | trim | lower) }}"
 
     - name: Initialize Docker Swarm on manager
-      ansible.builtin.command: docker swarm init --advertise-addr {{ tailscale_ip }}
+      ansible.builtin.command: >
+        docker swarm init
+        --advertise-addr {{ tailscale_ip }}
+        --data-path-addr {{ tailscale_ip }}
       when:
         - inventory_hostname == manager_host
         - swarm_state_norm != 'active'
@@ -47,6 +50,13 @@
         swarm_worker_token: "{{ worker_join_token.stdout | trim }}"
       when: inventory_hostname == manager_host
 
+    - name: Wait for manager TCP/2377 from workers
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[manager_host].swarm_manager_addr | default(hostvars[manager_host].tailscale_ip) }}"
+        port: 2377
+        timeout: 60
+      when: inventory_hostname in groups['small']
+
     - name: Get remote managers on workers
       ansible.builtin.command: docker info --format '{% raw %}{{range .Swarm.RemoteManagers}}{{.Addr}} {{end}}{% endraw %}'
       register: remote_mgrs
@@ -59,17 +69,19 @@
         joined_correct_manager: "{{ (remote_mgrs.stdout | default('')) is search((hostvars[manager_host].swarm_manager_addr | default(hostvars[manager_host].tailscale_ip)) ~ ':2377') }}"
       when: inventory_hostname in groups['small']
 
-    - name: Leave wrong swarm on workers
+    - name: Leave wrong or broken swarm on workers
       ansible.builtin.command: docker swarm leave --force
       when:
         - inventory_hostname in groups['small']
-        - swarm_state_norm == 'active'
+        - swarm_state_norm != 'inactive'
         - not joined_correct_manager | default(false)
 
-    - name: Join Docker Swarm on workers
+    - name: Join Docker Swarm on workers (advertise/data-path via Tailscale)
       ansible.builtin.command: >
         docker swarm join
         --token {{ hostvars[manager_host].swarm_worker_token }}
+        --advertise-addr {{ tailscale_ip }}
+        --data-path-addr {{ tailscale_ip }}
         {{ hostvars[manager_host].swarm_manager_addr | default(hostvars[manager_host].tailscale_ip) }}:2377
       register: join_result
       retries: 5
