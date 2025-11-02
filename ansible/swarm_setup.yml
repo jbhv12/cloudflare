@@ -104,6 +104,7 @@
 
     - name: Tag 'small' instance as 'small'
       ansible.builtin.command: docker node update --label-add node_type=small {{ ansible_hostname }}
+      delegate_to: "{{ manager_host }}"
       when:
         - inventory_hostname in groups['small']
         - (swarm_state_norm_after | default(swarm_state_norm)) == 'active'
