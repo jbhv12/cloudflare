@@ -5,15 +5,15 @@
     manager_host: "{{ groups['big'][0] }}"
 
   pre_tasks:
-    - name: Get Tailscale IP address
+    - name: Get Tailscale IPv4
       ansible.builtin.command: docker exec tailscaled tailscale ip -4
       register: tailscale_ip_output
       changed_when: false
       failed_when: tailscale_ip_output.rc != 0
 
-    - name: Set Tailscale IP fact
+    - name: Set Tailscale IP fact (trimmed)
       ansible.builtin.set_fact:
-        tailscale_ip: "{{ tailscale_ip_output.stdout }}"
+        tailscale_ip: "{{ tailscale_ip_output.stdout | trim }}"
 
   tasks:
     - name: Check local Swarm state
@@ -32,34 +32,32 @@
         - inventory_hostname == manager_host
         - swarm_state_norm != 'active'
       register: swarm_init_result
-      changed_when: "'already part of a swarm' not in (swarm_init_result.stderr | default('') | lower)"
+      changed_when: swarm_init_result.rc == 0
+      failed_when: swarm_init_result.rc != 0 and ('already part of a swarm' not in (swarm_init_result.stderr | default('') | lower))
 
     - name: Get worker join token from manager
       ansible.builtin.command: docker swarm join-token -q worker
       when: inventory_hostname == manager_host
       register: worker_join_token
+      changed_when: false
 
     - name: Publish swarm facts on manager host
       ansible.builtin.set_fact:
         swarm_manager_addr: "{{ tailscale_ip }}"
-        swarm_worker_token: "{{ worker_join_token.stdout }}"
+        swarm_worker_token: "{{ worker_join_token.stdout | trim }}"
       when: inventory_hostname == manager_host
 
-    - name: Get remote managers on workers (if in a swarm)
+    - name: Get remote managers on workers
       ansible.builtin.command: docker info --format '{% raw %}{{range .Swarm.RemoteManagers}}{{.Addr}} {{end}}{% endraw %}'
       register: remote_mgrs
       changed_when: false
       failed_when: false
-      when:
-        - inventory_hostname in groups['small']
-        - swarm_state_norm == 'active'
+      when: inventory_hostname in groups['small']
 
     - name: Determine if worker is joined to the correct manager
       ansible.builtin.set_fact:
-        joined_correct_manager: "{{ (remote_mgrs.stdout | default('')) is search(hostvars[manager_host].swarm_manager_addr ~ ':2377') }}"
-      when:
-        - inventory_hostname in groups['small']
-        - swarm_state_norm == 'active'
+        joined_correct_manager: "{{ (remote_mgrs.stdout | default('')) is search((hostvars[manager_host].swarm_manager_addr | default(hostvars[manager_host].tailscale_ip)) ~ ':2377') }}"
+      when: inventory_hostname in groups['small']
 
     - name: Leave wrong swarm on workers
       ansible.builtin.command: docker swarm leave --force
@@ -72,12 +70,12 @@
       ansible.builtin.command: >
         docker swarm join
         --token {{ hostvars[manager_host].swarm_worker_token }}
-        {{ hostvars[manager_host].swarm_manager_addr }}:2377
+        {{ hostvars[manager_host].swarm_manager_addr | default(hostvars[manager_host].tailscale_ip) }}:2377
       register: join_result
       retries: 5
       delay: 10
-      until: join_result.rc == 0 or ('already part of a swarm' in (join_result.stderr | lower))
-      failed_when: join_result.rc != 0 and ('already part of a swarm' not in (join_result.stderr | lower))
+      until: join_result.rc == 0 or ('already part of a swarm' in ((join_result.stderr | default('')) | lower))
+      failed_when: join_result.rc != 0 and ('already part of a swarm' not in ((join_result.stderr | default('')) | lower))
       changed_when: join_result.rc == 0
       when:
         - inventory_hostname in groups['small']
@@ -88,23 +86,21 @@
       register: swarm_state_after
       changed_when: false
       failed_when: false
-      when:
-        - inventory_hostname in groups['small']
+      when: inventory_hostname in groups['small']
 
     - name: Normalize post-join swarm state (workers)
       ansible.builtin.set_fact:
         swarm_state_norm_after: "{{ (swarm_state_after.stdout | default('') | trim | lower) }}"
-      when:
-        - inventory_hostname in groups['small']
+      when: inventory_hostname in groups['small']
 
-    - name: Tag 'big' instance as 'big'
-      ansible.builtin.command: docker node update --label-add node_type=big {{ ansible_hostname }}
-      when:
-        - inventory_hostname == manager_host
-
-    - name: Tag 'small' instance as 'small'
-      ansible.builtin.command: docker node update --label-add node_type=small {{ ansible_hostname }}
+    - name: Label manager node as 'big'
+      ansible.builtin.command: docker node update --label-add node_type=big {{ hostvars[manager_host].ansible_hostname }}
       delegate_to: "{{ manager_host }}"
-      when:
-        - inventory_hostname in groups['small']
-        - (swarm_state_norm_after | default(swarm_state_norm)) == 'active'
+      run_once: true
+
+    - name: Label 'small' nodes as 'small'
+      ansible.builtin.command: docker node update --label-add node_type=small {{ hostvars[item].ansible_hostname }}
+      loop: "{{ groups['small'] | default([]) }}"
+      delegate_to: "{{ manager_host }}"
+      run_once: true
+      failed_when: false
