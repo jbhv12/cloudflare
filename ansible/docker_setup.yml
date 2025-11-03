@@ -63,6 +63,12 @@
         state: started
         enabled: yes
 
+    - name: Add ubuntu user to docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
     - name: Verify Docker installation
       ansible.builtin.command: docker --version
       register: docker_version
