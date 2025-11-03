@@ -23,6 +23,7 @@
         destination_port: "{{ item.port }}"
         jump: ACCEPT
         comment: "Allow Docker Swarm traffic"
+        rule_num: 5
       with_items:
         - { proto: 'tcp', port: '2377' }  # Swarm management
         - { proto: 'tcp', port: '7946' }  # Swarm node communication
