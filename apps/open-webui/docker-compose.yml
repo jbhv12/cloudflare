@@ -9,3 +9,7 @@ services:
     volumes:
       - ./data:/app/backend/data
     restart: always
+    deploy:
+      placement:
+        constraints:
+          - node.labels.node_type == small

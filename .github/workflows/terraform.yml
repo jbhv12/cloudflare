@@ -111,7 +111,7 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
         run: ansible-playbook -i inventory.ini ansible/npm_setup.yml -e "npm_user=$NPM_USER" -e "npm_password=$NPM_PASSWORD" -e "cf_api_token=$CF_API_TOKEN"
 
-      # - name: Run Apps
-      #   env:
-      #     ANSIBLE_HOST_KEY_CHECKING: 'False'
-      #   run: ansible-playbook -i inventory.ini ansible/start_apps.yml -e "openai_api_key=$OPENAI_API_KEY" 
+      - name: Run Apps
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'False'
+        run: ansible-playbook -i inventory.ini ansible/start_apps.yml -e "openai_api_key=$OPENAI_API_KEY" 
