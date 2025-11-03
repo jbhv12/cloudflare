@@ -16,6 +16,19 @@
         tailscale_ip: "{{ tailscale_ip_output.stdout | trim }}"
 
   tasks:
+    - name: Open Docker Swarm firewall ports for node communication
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: "{{ item.proto }}"
+        destination_port: "{{ item.port }}"
+        jump: ACCEPT
+        comment: "Allow Docker Swarm traffic"
+      with_items:
+        - { proto: 'tcp', port: '2377' }  # Swarm management
+        - { proto: 'tcp', port: '7946' }  # Swarm node communication
+        - { proto: 'udp', port: '7946' }  # Swarm node communication
+        - { proto: 'udp', port: '4789' }  # Swarm overlay network
+
     - name: Check local Swarm state
       ansible.builtin.command: docker info --format '{% raw %}{{.Swarm.LocalNodeState}}{% endraw %}'
       register: swarm_state
