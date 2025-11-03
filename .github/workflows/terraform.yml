@@ -94,7 +94,12 @@ jobs:
       - name: Run Docker Setup Playbook
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
-        run: ansible-playbook -i inventory.ini ansible/docker_setup.yml -e "tailscale_auth_key=$TAILSCALE_AUTH_KEY"
+        run: ansible-playbook -i inventory.ini ansible/docker_setup.yml
+
+      - name: Run Tailscale Setup Playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'False'
+        run: ansible-playbook -i inventory.ini ansible/tailscale_setup.yml -e "tailscale_auth_key=$TAILSCALE_AUTH_KEY"
 
       - name: Run Swarm Setup Playbook
         env:

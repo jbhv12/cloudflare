@@ -1,0 +1,37 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install prerequisites for Tailscale
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Add Tailscale GPG key
+      ansible.builtin.shell: |
+        set -eu
+        install -m 0755 -d /usr/share/keyrings
+        curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/{{ ansible_lsb.codename }}.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg
+        chmod 0644 /usr/share/keyrings/tailscale-archive-keyring.gpg
+      args:
+        creates: /usr/share/keyrings/tailscale-archive-keyring.gpg
+
+    - name: Add Tailscale repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu {{ ansible_lsb.codename }} main"
+        filename: tailscale
+        state: present
+        update_cache: true
+
+    - name: Install Tailscale
+      ansible.builtin.apt:
+        name: tailscale
+        state: latest
+        update_cache: yes
+
+    - name: Start Tailscale
+      ansible.builtin.command: tailscale up --authkey={{ tailscale_auth_key }} --reset
+      changed_when: false
