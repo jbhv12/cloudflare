@@ -17,3 +17,5 @@
         docker compose up -d
       args:
         chdir: "/home/{{ ansible_user }}/apps/open-webui"
+      async: 3600
+      poll: 0
