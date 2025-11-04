@@ -10,12 +10,9 @@
         group: "{{ ansible_user }}"
         mode: preserve
     
-    - name: Run Docker Compose
+    - name: Deploy open-webui stack
       ansible.builtin.shell: |
         export OPENAI_API_KEY="{{ openai_api_key }}"
-        echo $OPENAI_API_KEY >> ~/oai.test
-        docker compose up -d
+        docker stack deploy -c docker-compose.yml open-webui
       args:
         chdir: "/home/{{ ansible_user }}/apps/open-webui"
-      async: 3600
-      poll: 0
