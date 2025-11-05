@@ -14,5 +14,7 @@
       ansible.builtin.shell: |
         export OPENAI_API_KEY="{{ openai_api_key }}"
         docker stack deploy -c docker-compose.yml open-webui
+      environment:
+        OPENAI_API_KEY: "{{ openai_api_key }}"
       args:
         chdir: "/home/{{ ansible_user }}/apps/open-webui"

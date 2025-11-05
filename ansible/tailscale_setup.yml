@@ -33,5 +33,5 @@
         update_cache: yes
 
     - name: Start Tailscale
-      ansible.builtin.command: tailscale up --authkey={{ tailscale_auth_key }} --reset
+      ansible.builtin.command: tailscale up --authkey={{ tailscale_auth_key }} --hostname={{ inventory_hostname }} --reset
       changed_when: false

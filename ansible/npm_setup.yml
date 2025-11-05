@@ -6,7 +6,7 @@
         forward_host: "localhost"
         forward_port: 81
       - domain_names: ["ai.oci.is-savvy.dev"]
-        forward_host: "host.docker.internal"
+        forward_host: "small"
         forward_port: 3145
 
   tasks:

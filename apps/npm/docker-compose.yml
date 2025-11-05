@@ -8,8 +8,12 @@ services:
       - '81:81'
       - '443:443'
     volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
+      - data-volume:/data
+      - letsencrypt-volume:/etc/letsencrypt
     environment:
       INITIAL_ADMIN_EMAIL: ${NPM_USER}
       INITIAL_ADMIN_PASSWORD: ${NPM_PASSWORD}
+
+volumes:
+  data-volume:
+  letsencrypt-volume:
