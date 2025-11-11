@@ -7,9 +7,11 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     volumes:
-      - ./data:/app/backend/data
+      - openwebui-data:/app/backend/data 
     restart: always
     deploy:
       placement:
         constraints:
           - node.labels.node_type == small
+volumes:
+  openwebui-data:
