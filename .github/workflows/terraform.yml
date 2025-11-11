@@ -76,10 +76,10 @@ jobs:
           INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
 
           echo "[big]" > inventory.ini
-          echo "${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "big-01 ansible_host=${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
           echo "[small]" >> inventory.ini
-          echo "${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "small-01 ansible_host=${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
       - name: Install Ansible Docker collection
         run: ansible-galaxy collection install community.docker
@@ -118,10 +118,10 @@ jobs:
           INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
 
           echo "[big]" > inventory.ini
-          echo "${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "big-01 ansible_host=${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
           echo "[small]" >> inventory.ini
-          echo "${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "small-01 ansible_host=${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
       - name: Run Tailscale Setup Playbook
         env:
@@ -155,10 +155,10 @@ jobs:
           INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
 
           echo "[big]" > inventory.ini
-          echo "${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "big-01 ansible_host=${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
           echo "[small]" >> inventory.ini
-          echo "${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "small-01 ansible_host=${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
       - name: Run Swarm Setup Playbook
         env:
@@ -196,10 +196,10 @@ jobs:
           INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
 
           echo "[big]" > inventory.ini
-          echo "${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "big-01 ansible_host=${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
           echo "[small]" >> inventory.ini
-          echo "${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "small-01 ansible_host=${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
       - name: Run NPM Setup Playbook
         env:
@@ -235,13 +235,12 @@ jobs:
           INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
 
           echo "[big]" > inventory.ini
-          echo "${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "big-01 ansible_host=${INSTANCES_IPS[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
           echo "[small]" >> inventory.ini
-          echo "${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "small-01 ansible_host=${INSTANCES_IPS[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
       - name: Run Apps Playbook
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
         run: ansible-playbook -i inventory.ini ansible/start_apps.yml -e "openai_api_key=$OPENAI_API_KEY"
-

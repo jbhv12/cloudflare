@@ -18,3 +18,6 @@ The `cloudflare_account_id` is set to a default value in the Terraform configura
 
 *   When you push to the `main` branch, the workflow will automatically run `terraform apply -auto-approve`.
 *   For any other push, the workflow will run `terraform plan`.
+
+
+export GOOGLE_CLOUD_PROJECT=gen-lang-client-0737253963
