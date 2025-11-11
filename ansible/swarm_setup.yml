@@ -35,6 +35,8 @@
         - { proto: 'tcp', port: '7946' }  # Swarm node communication
         - { proto: 'udp', port: '7946' }  # Swarm node communication
         - { proto: 'udp', port: '4789' }  # Swarm overlay network
+        - { proto: 'tcp', port: '80' }    # HTTP
+        - { proto: 'tcp', port: '443' }   # HTTPS
 
     - name: Add REJECT rule back to the end of INPUT chain
       ansible.builtin.iptables:
