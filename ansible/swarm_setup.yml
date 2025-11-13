@@ -58,7 +58,6 @@
       ansible.builtin.command: >
         docker swarm init
         --advertise-addr {{ tailscale_ip }}
-        --data-path-addr {{ tailscale_ip }}
       when:
         - inventory_hostname == manager_host
         - swarm_state_norm != 'active'
@@ -109,7 +108,6 @@
         docker swarm join
         --token {{ hostvars[manager_host].swarm_worker_token }}
         --advertise-addr {{ tailscale_ip }}
-        --data-path-addr {{ tailscale_ip }}
         {{ hostvars[manager_host].swarm_manager_addr | default(hostvars[manager_host].tailscale_ip) }}:2377
       register: join_result
       retries: 5
