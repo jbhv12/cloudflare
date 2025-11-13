@@ -113,7 +113,6 @@ resource "oci_core_instance" "vm_instance" {
     source_type             = "image"
     source_id               = data.oci_core_images.ubuntu_latest.images[0].id
     boot_volume_size_in_gbs = count.index == 0 ? 120 : 80
-    kms_key_id              = null
   }
 
   metadata = {
