@@ -3,6 +3,8 @@ services:
     image: 'jc21/nginx-proxy-manager:2.12.6'
     restart: unless-stopped
     network_mode: host
+    dns:
+      - 100.100.100.100
     ports:
       - '80:80'
       - '81:81'

@@ -103,6 +103,26 @@
       set_fact:
         cert_id: "{{ found_cert.id if found_cert is defined else certificate_creation.json.id }}"
 
+    - name: Get all proxy hosts
+      ansible.builtin.uri:
+        url: "http://localhost:81/api/nginx/proxy-hosts"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ api_token }}"
+        return_content: yes
+        status_code: 200
+      register: all_proxy_hosts
+
+    - name: Delete managed proxy hosts if they exist
+      ansible.builtin.uri:
+        url: "http://localhost:81/api/nginx/proxy-hosts/{{ item.id }}"
+        method: DELETE
+        headers:
+          Authorization: "Bearer {{ api_token }}"
+      loop: "{{ all_proxy_hosts.json }}"
+      when: "item.domain_names | sort in (proxy_hosts | map(attribute='domain_names') | map('sort') | list)"
+      ignore_errors: true
+
     - name: Create proxy hosts
       ansible.builtin.uri:
         url: "http://localhost:81/api/nginx/proxy-hosts"
@@ -129,14 +149,4 @@
           advanced_config: ""
           meta: {}
         status_code: [200, 201]
-      loop: "{{ proxy_hosts }}"
-      register: proxy_creation
-      ignore_errors: true
-
-    - name: Fail if proxy host creation failed for other reasons
-      ansible.builtin.fail:
-        msg: "Failed to create proxy host {{ item.item.domain_names[0] }}: {{ item.msg }}"
-      loop: "{{ proxy_creation.results }}"
-      when:
-        - item.failed
-        - "'is already in use' not in item.json.error.message" 
+      loop: "{{ proxy_hosts }}" 
