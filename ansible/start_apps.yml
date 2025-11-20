@@ -1,4 +1,4 @@
-- hosts: big
+- hosts: all
   become: yes
 
   tasks:
@@ -11,9 +11,10 @@
         mode: preserve
     
     - name: Deploy open-webui stack
+      when: "'small' in group_names"
       ansible.builtin.shell: |
         export OPENAI_API_KEY="{{ openai_api_key }}"
-        docker stack deploy -c docker-compose.yml open-webui
+        docker compose up -d
       environment:
         OPENAI_API_KEY: "{{ openai_api_key }}"
       args:

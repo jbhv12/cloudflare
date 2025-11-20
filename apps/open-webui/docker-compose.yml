@@ -9,9 +9,5 @@ services:
     volumes:
       - openwebui-data:/app/backend/data 
     restart: always
-    deploy:
-      placement:
-        constraints:
-          - node.labels.node_type == small
 volumes:
   openwebui-data:
