@@ -7,7 +7,7 @@
         forward_port: 81
       - domain_names: ["ai.oci.is-savvy.dev"]
         forward_host: "small-1"
-        forward_port: 3145
+        forward_port: 8081
 
   tasks:
     - name: Copy apps directory to target

@@ -10,7 +10,7 @@
         group: "{{ ansible_user }}"
         mode: preserve
     
-    - name: Deploy open-webui stack
+    - name: Deploy firefly
       when: "'small' in group_names"
       ansible.builtin.shell: |
         export OPENAI_API_KEY="{{ openai_api_key }}"
@@ -18,4 +18,4 @@
       environment:
         OPENAI_API_KEY: "{{ openai_api_key }}"
       args:
-        chdir: "/home/{{ ansible_user }}/apps/open-webui"
+        chdir: "/home/{{ ansible_user }}/apps/firefly"
