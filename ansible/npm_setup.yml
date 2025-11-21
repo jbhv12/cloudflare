@@ -96,6 +96,7 @@
             dns_provider_credentials: "dns_cloudflare_api_token={{ cf_api_token }}"
             propagation_seconds: 120
         status_code: [200, 201]
+        timeout: 500
       register: certificate_creation
       when: found_cert is not defined
 
