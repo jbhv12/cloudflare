@@ -6,7 +6,7 @@
         forward_host: "localhost"
         forward_port: 81
       - domain_names: ["ai.oci.is-savvy.dev"]
-        forward_host: "small-1"
+        forward_host: "small"
         forward_port: 8081
 
   tasks:
@@ -151,24 +151,3 @@
           meta: {}
         status_code: [200, 201]
       loop: "{{ proxy_hosts }}" 
-    
-    - name: Open firewall ports for node communication
-      ansible.builtin.iptables:
-        chain: INPUT
-        protocol: "{{ item.proto }}"
-        destination_port: "{{ item.port }}"
-        jump: ACCEPT
-        comment: "Allow Docker Swarm traffic"
-      with_items:
-        - { proto: 'tcp', port: '2377' }
-        - { proto: 'tcp', port: '7946' }
-        - { proto: 'udp', port: '7946' }
-        - { proto: 'udp', port: '4789' }
-        - { proto: 'tcp', port: '80' }
-        - { proto: 'tcp', port: '443' }
-
-    - name: Add REJECT rule back to the end of INPUT chain
-      ansible.builtin.iptables:
-        chain: INPUT
-        jump: REJECT
-        reject_with: icmp-host-prohibited
