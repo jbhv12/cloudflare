@@ -35,3 +35,31 @@
     - name: Start Tailscale
       ansible.builtin.command: tailscale up --authkey={{ tailscale_auth_key }} --hostname={{ inventory_hostname }} --reset
       changed_when: false
+
+    - name: Install UFW (Uncomplicated Firewall)
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+        update_cache: yes
+
+    - name: Allow incoming HTTP (port 80) traffic
+      community.general.ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Allow incoming HTTPS (port 443) traffic
+      community.general.ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+
+    - name: Allow incoming SSH (port 22) traffic
+      community.general.ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
