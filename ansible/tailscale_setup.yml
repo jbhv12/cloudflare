@@ -1,6 +1,12 @@
 ---
 - hosts: all
   become: yes
+  pre_tasks:
+    - name: Install community.general collection
+      local_action: command ansible-galaxy collection install community.general
+      become: false
+      args:
+        creates: ~/.ansible/collections/ansible_collections/community/general
   tasks:
     - name: Install prerequisites for Tailscale
       ansible.builtin.apt:
