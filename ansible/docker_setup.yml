@@ -24,7 +24,6 @@
           - curl
           - gnupg
           - lsb-release
-          - ufw
         state: present
         update_cache: yes
 
@@ -70,20 +69,6 @@
         groups: docker
         append: yes
 
-    - name: Allow all access to tcp port 80
-      community.general.ufw:
-        rule: allow
-        port: '80'
-        proto: tcp
-      notify: Reload ufw
-
-    - name: Enable UFW and set default incoming policy to deny
-      community.general.ufw:
-        state: enabled
-        policy: deny
-        direction: incoming
-      notify: Reload ufw
-
     - name: Verify Docker installation
       ansible.builtin.command: docker --version
       register: docker_version
@@ -92,7 +77,4 @@
     - ansible.builtin.debug:
         var: docker_version.stdout
 
-  handlers:
-    - name: Reload ufw
-      ansible.builtin.command: ufw reload
-      listen: "Reload ufw"
+    
