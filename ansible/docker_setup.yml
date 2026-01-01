@@ -43,6 +43,22 @@
         filename: docker
         state: present
 
+    - name: Create /etc/docker directory
+      ansible.builtin.file:
+        path: /etc/docker
+        state: directory
+        mode: '0755'
+
+    - name: Configure Docker to not manage iptables
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "iptables": false
+          }
+        mode: '0644'
+      notify: Restart Docker
+
     - name: Update apt cache after adding Docker repo
       ansible.builtin.apt:
         update_cache: yes
@@ -77,4 +93,8 @@
     - ansible.builtin.debug:
         var: docker_version.stdout
 
-    
+  handlers:
+    - name: Restart Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: restarted

@@ -66,12 +66,3 @@
     - name: Enable UFW
       community.general.ufw:
         state: enabled
-
-    - name: Get iptables rules
-      ansible.builtin.command: iptables -L
-      register: iptables_rules
-      changed_when: false
-
-    - name: Display iptables rules
-      ansible.builtin.debug:
-        var: iptables_rules.stdout_lines
