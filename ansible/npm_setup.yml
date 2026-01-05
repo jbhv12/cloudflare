@@ -26,128 +26,128 @@
       args:
         chdir: "/home/{{ ansible_user }}/apps/npm"
 
-    - name: Wait for API to be ready
-      ansible.builtin.wait_for:
-        host: localhost
-        port: 81
-        delay: 5
-        timeout: 60
+    # - name: Wait for API to be ready
+    #   ansible.builtin.wait_for:
+    #     host: localhost
+    #     port: 81
+    #     delay: 5
+    #     timeout: 60
 
-    - name: Create API token
-      ansible.builtin.uri:
-        url: "http://localhost:81/api/tokens"
-        method: POST
-        body_format: json
-        body:
-          identity: "{{ npm_user }}"
-          secret: "{{ npm_password }}"
-          scope: "user"
-        headers:
-          Content-Type: "application/json"
-        return_content: yes
-        status_code: 200
-      register: token_response
+    # - name: Create API token
+    #   ansible.builtin.uri:
+    #     url: "http://localhost:81/api/tokens"
+    #     method: POST
+    #     body_format: json
+    #     body:
+    #       identity: "{{ npm_user }}"
+    #       secret: "{{ npm_password }}"
+    #       scope: "user"
+    #     headers:
+    #       Content-Type: "application/json"
+    #     return_content: yes
+    #     status_code: 200
+    #   register: token_response
 
-    - name: Extract token from response
-      set_fact:
-        api_token: "{{ (token_response.content | from_json).token }}"
+    # - name: Extract token from response
+    #   set_fact:
+    #     api_token: "{{ (token_response.content | from_json).token }}"
 
-    - name: Check for existing certificate
-      ansible.builtin.uri:
-        url: "http://localhost:81/api/nginx/certificates"
-        method: GET
-        headers:
-          Authorization: "Bearer {{ api_token }}"
-        return_content: yes
-        status_code: 200
-      register: existing_certs
+    # - name: Check for existing certificate
+    #   ansible.builtin.uri:
+    #     url: "http://localhost:81/api/nginx/certificates"
+    #     method: GET
+    #     headers:
+    #       Authorization: "Bearer {{ api_token }}"
+    #     return_content: yes
+    #     status_code: 200
+    #   register: existing_certs
 
-    - name: Set cert_domains variable
-      set_fact:
-        cert_domains:
-          - "oci.is-savvy.dev"
-          - "*.oci.is-savvy.dev"
+    # - name: Set cert_domains variable
+    #   set_fact:
+    #     cert_domains:
+    #       - "oci.is-savvy.dev"
+    #       - "*.oci.is-savvy.dev"
 
-    - name: Find existing certificate
-      set_fact:
-        found_cert: "{{ item }}"
-      loop: "{{ existing_certs.json }}"
-      when: "cert_domains | sort == item.domain_names | sort"
+    # - name: Find existing certificate
+    #   set_fact:
+    #     found_cert: "{{ item }}"
+    #   loop: "{{ existing_certs.json }}"
+    #   when: "cert_domains | sort == item.domain_names | sort"
 
-    - name: Create TLS certificate
-      ansible.builtin.uri:
-        url: "http://localhost:81/api/nginx/certificates"
-        method: POST
-        headers:
-          Content-Type: "application/json"
-          Authorization: "Bearer {{ api_token }}"
-        body_format: json
-        body:
-          provider: "letsencrypt"
-          nice_name: "*.oci.is-savvy.dev"
-          domain_names:
-            - "oci.is-savvy.dev"
-            - "*.oci.is-savvy.dev"
-          meta:
-            letsencrypt_email: "jbhv12@gmail.com"
-            letsencrypt_agree: true
-            dns_challenge: true
-            dns_provider: "cloudflare"
-            dns_provider_credentials: "dns_cloudflare_api_token={{ cf_api_token }}"
-            propagation_seconds: 120
-        status_code: [200, 201]
-        timeout: 500
-      register: certificate_creation
-      when: found_cert is not defined
+    # - name: Create TLS certificate
+    #   ansible.builtin.uri:
+    #     url: "http://localhost:81/api/nginx/certificates"
+    #     method: POST
+    #     headers:
+    #       Content-Type: "application/json"
+    #       Authorization: "Bearer {{ api_token }}"
+    #     body_format: json
+    #     body:
+    #       provider: "letsencrypt"
+    #       nice_name: "*.oci.is-savvy.dev"
+    #       domain_names:
+    #         - "oci.is-savvy.dev"
+    #         - "*.oci.is-savvy.dev"
+    #       meta:
+    #         letsencrypt_email: "jbhv12@gmail.com"
+    #         letsencrypt_agree: true
+    #         dns_challenge: true
+    #         dns_provider: "cloudflare"
+    #         dns_provider_credentials: "dns_cloudflare_api_token={{ cf_api_token }}"
+    #         propagation_seconds: 120
+    #     status_code: [200, 201]
+    #     timeout: 500
+    #   register: certificate_creation
+    #   when: found_cert is not defined
 
-    - name: Set certificate ID
-      set_fact:
-        cert_id: "{{ found_cert.id if found_cert is defined else certificate_creation.json.id }}"
+    # - name: Set certificate ID
+    #   set_fact:
+    #     cert_id: "{{ found_cert.id if found_cert is defined else certificate_creation.json.id }}"
 
-    - name: Get all proxy hosts
-      ansible.builtin.uri:
-        url: "http://localhost:81/api/nginx/proxy-hosts"
-        method: GET
-        headers:
-          Authorization: "Bearer {{ api_token }}"
-        return_content: yes
-        status_code: 200
-      register: all_proxy_hosts
+    # - name: Get all proxy hosts
+    #   ansible.builtin.uri:
+    #     url: "http://localhost:81/api/nginx/proxy-hosts"
+    #     method: GET
+    #     headers:
+    #       Authorization: "Bearer {{ api_token }}"
+    #     return_content: yes
+    #     status_code: 200
+    #   register: all_proxy_hosts
 
-    - name: Delete managed proxy hosts if they exist
-      ansible.builtin.uri:
-        url: "http://localhost:81/api/nginx/proxy-hosts/{{ item.id }}"
-        method: DELETE
-        headers:
-          Authorization: "Bearer {{ api_token }}"
-      loop: "{{ all_proxy_hosts.json }}"
-      when: "item.domain_names | sort in (proxy_hosts | map(attribute='domain_names') | map('sort') | list)"
-      ignore_errors: true
+    # - name: Delete managed proxy hosts if they exist
+    #   ansible.builtin.uri:
+    #     url: "http://localhost:81/api/nginx/proxy-hosts/{{ item.id }}"
+    #     method: DELETE
+    #     headers:
+    #       Authorization: "Bearer {{ api_token }}"
+    #   loop: "{{ all_proxy_hosts.json }}"
+    #   when: "item.domain_names | sort in (proxy_hosts | map(attribute='domain_names') | map('sort') | list)"
+    #   ignore_errors: true
 
-    - name: Create proxy hosts
-      ansible.builtin.uri:
-        url: "http://localhost:81/api/nginx/proxy-hosts"
-        method: POST
-        headers:
-          Content-Type: "application/json"
-          Authorization: "Bearer {{ api_token }}"
-        body_format: json
-        body:
-          domain_names: "{{ item.domain_names }}"
-          forward_scheme: "http"
-          forward_host: "{{ item.forward_host }}"
-          forward_port: "{{ item.forward_port }}"
-          access_list_id: 0
-          certificate_id: "{{ cert_id }}"
-          ssl_forced: true
-          caching_enabled: false
-          block_exploits: true
-          allow_websocket_upgrade: true
-          http2_support: true
-          hsts_enabled: false
-          hsts_subdomains: false
-          enabled: true
-          advanced_config: ""
-          meta: {}
-        status_code: [200, 201]
-      loop: "{{ proxy_hosts }}" 
+    # - name: Create proxy hosts
+    #   ansible.builtin.uri:
+    #     url: "http://localhost:81/api/nginx/proxy-hosts"
+    #     method: POST
+    #     headers:
+    #       Content-Type: "application/json"
+    #       Authorization: "Bearer {{ api_token }}"
+    #     body_format: json
+    #     body:
+    #       domain_names: "{{ item.domain_names }}"
+    #       forward_scheme: "http"
+    #       forward_host: "{{ item.forward_host }}"
+    #       forward_port: "{{ item.forward_port }}"
+    #       access_list_id: 0
+    #       certificate_id: "{{ cert_id }}"
+    #       ssl_forced: true
+    #       caching_enabled: false
+    #       block_exploits: true
+    #       allow_websocket_upgrade: true
+    #       http2_support: true
+    #       hsts_enabled: false
+    #       hsts_subdomains: false
+    #       enabled: true
+    #       advanced_config: ""
+    #       meta: {}
+    #     status_code: [200, 201]
+    #   loop: "{{ proxy_hosts }}" 
