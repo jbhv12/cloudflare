@@ -1,0 +1,30 @@
+- name: Configure firewall for Oracle Linux
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure firewalld is active
+      ansible.builtin.service:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: Open HTTP port
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: yes
+
+    - name: Open HTTPS port
+      ansible.posix.firewalld:
+        service: https
+        permanent: true
+        state: enabled
+        immediate: yes
+
+    - name: Open SSH port
+      ansible.posix.firewalld:
+        service: ssh
+        permanent: true
+        state: enabled
+        immediate: yes

@@ -11,10 +11,10 @@ locals {
   ad1_name              = one([for ad in data.oci_identity_availability_domains.ads.availability_domains : ad.name if length(regexall("AD-1$", ad.name)) > 0])
 }
 
-data "oci_core_images" "ubuntu_latest" {
+data "oci_core_images" "oracle_linux_latest" {
   compartment_id           = local.root_compartment_ocid
-  operating_system         = "Canonical Ubuntu"
-  operating_system_version = "24.04"
+  operating_system         = "Oracle Linux"
+  operating_system_version = "9"
   shape                    = "VM.Standard.E2.1.Micro"
   sort_by                  = "TIMECREATED"
   sort_order               = "DESC"
@@ -111,7 +111,7 @@ resource "oci_core_instance" "vm_instance" {
 
   source_details {
     source_type             = "image"
-    source_id               = data.oci_core_images.ubuntu_latest.images[0].id
+    source_id               = data.oci_core_images.oracle_linux_latest.images[0].id
     boot_volume_size_in_gbs = count.index == 0 ? 120 : 80
   }
 

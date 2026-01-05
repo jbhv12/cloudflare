@@ -49,10 +49,47 @@ jobs:
     outputs:
       instance_public_ips: ${{ steps.get_ips.outputs.instance_public_ips }}
 
+  ansible-firewall-setup:
+    name: Ansible - Firewall Setup
+    runs-on: ubuntu-latest
+    needs: terraform
+    container: ghcr.io/ansible/creator-ee:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write SSH key
+        env:
+          SSH_KEY_B64: ${{ secrets.VM_PRIVATE_KEY_B64 }}
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "$SSH_KEY_B64" | base64 -d > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
+          
+          for ip in $INSTANCES_IPS; do
+            ssh-keyscan -H $ip >> ~/.ssh/known_hosts
+          done
+
+      - name: Create Ansible inventory for Oracle Linux
+        run: |
+          INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
+
+          echo "[big]" > inventory.ini
+          echo "big ansible_host=${INSTANCES_IPS[0]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+
+          echo "[small]" >> inventory.ini
+          echo "small ansible_host=${INSTANCES_IPS[1]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+
+      - name: Run Firewall Setup Playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'False'
+        run: ansible-playbook -i inventory.ini ansible/firewall_setup.yml
+
   ansible-docker-setup:
     name: Ansible - Docker Setup
     runs-on: ubuntu-latest
-    needs: terraform
+    needs: [terraform, ansible-firewall-setup]
     container: ghcr.io/ansible/creator-ee:latest
     steps:
       - uses: actions/checkout@v4
