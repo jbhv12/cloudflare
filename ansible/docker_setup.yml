@@ -5,11 +5,6 @@
     manager_host: "{{ groups['big'][0] }}"
 
   tasks:
-    - name: Update all packages
-      ansible.builtin.dnf:
-        name: '*'
-        state: latest
-
     - name: Install prerequisites for Docker
       ansible.builtin.dnf:
         name:
