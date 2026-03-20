@@ -3,6 +3,23 @@
   vars:
     manager_host: "{{ groups['all'][0] }}"
 
+  pre_tasks:
+    - name: Ensure DNF cache is available
+      ansible.builtin.shell: dnf -y makecache --refresh
+      warn: false
+      register: makecache
+      changed_when: false
+      retries: 3
+      delay: 10
+      until: makecache is succeeded
+
+    - name: Enable OL9 addons repository (best effort)
+      ansible.builtin.command: dnf config-manager --set-enabled ol9_addons
+      register: enable_addons
+      changed_when: enable_addons.rc == 0
+      failed_when: false
+      when: ansible_distribution == 'OracleLinux' and (ansible_distribution_major_version | int) >= 9
+
   tasks:
     - name: Install prerequisites for Docker
       ansible.builtin.dnf:
@@ -11,15 +28,18 @@
         state: present
         update_cache: yes
         lock_timeout: 120
+      async: 600
+      poll: 10
 
     - name: Configure Docker CE repository
       ansible.builtin.yum_repository:
         name: docker-ce-stable
         description: Docker CE Stable - $releasever - $basearch
-        baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+        baseurl: https://download.docker.com/linux/rhel/$releasever/$basearch/stable
         enabled: yes
         gpgcheck: yes
         gpgkey: https://download.docker.com/linux/centos/gpg
+        module_hotfixes: yes
 
     - name: Install Docker Engine, CLI, and plugins
       ansible.builtin.dnf:
@@ -34,6 +54,8 @@
         update_cache: yes
         lock_timeout: 300
         nobest: yes
+      async: 1200
+      poll: 15
 
     - name: Enable and start Docker service
       ansible.builtin.systemd:

@@ -68,16 +68,17 @@ jobs:
           INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
           
           for ip in $INSTANCES_IPS; do
-            ssh-keyscan -H $ip >> ~/.ssh/known_hosts
+            ssh-keyscan -T 5 -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
           done
 
       - name: Create Ansible inventory for Oracle Linux
         run: |
-          INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]"' | tr ',' ' ')
 
           echo "[servers]" > inventory.ini
-          echo "${INSTANCES_IPS[0]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
-          echo "${INSTANCES_IPS[1]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          for ip in $INSTANCES_IPS; do
+            echo "$ip ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          done
 
       - name: Run Firewall Setup Playbook
         env:
@@ -103,16 +104,17 @@ jobs:
           INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
           
           for ip in $INSTANCES_IPS; do
-            ssh-keyscan -H $ip >> ~/.ssh/known_hosts
+            ssh-keyscan -T 5 -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
           done
 
       - name: Create Ansible inventory
         run: |
-          INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]"' | tr ',' ' ')
 
           echo "[servers]" > inventory.ini
-          echo "${INSTANCES_IPS[0]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
-          echo "${INSTANCES_IPS[1]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          for ip in $INSTANCES_IPS; do
+            echo "$ip ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          done
 
       - name: Install Ansible Docker collection
         run: ansible-galaxy collection install community.docker
@@ -143,16 +145,17 @@ jobs:
           INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
           
           for ip in $INSTANCES_IPS; do
-            ssh-keyscan -H $ip >> ~/.ssh/known_hosts
+            ssh-keyscan -T 5 -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
           done
 
       - name: Create Ansible inventory
         run: |
-          INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]"' | tr ',' ' ')
 
           echo "[servers]" > inventory.ini
-          echo "${INSTANCES_IPS[0]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
-          echo "${INSTANCES_IPS[1]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          for ip in $INSTANCES_IPS; do
+            echo "$ip ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          done
 
       - name: Run Tailscale Setup Playbook
         env:
@@ -184,16 +187,17 @@ jobs:
           INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
           
           for ip in $INSTANCES_IPS; do
-            ssh-keyscan -H $ip >> ~/.ssh/known_hosts
+            ssh-keyscan -T 5 -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
           done
 
       - name: Create Ansible inventory
         run: |
-          INSTANCES_IPS=($(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' '))
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]"' | tr ',' ' ')
 
           echo "[servers]" > inventory.ini
-          echo "${INSTANCES_IPS[0]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
-          echo "${INSTANCES_IPS[1]} ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          for ip in $INSTANCES_IPS; do
+            echo "$ip ansible_user=opc ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          done
 
       - name: Run NPM Setup Playbook
         env:
