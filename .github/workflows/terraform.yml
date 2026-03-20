@@ -120,7 +120,7 @@ jobs:
       - name: Run Docker Setup Playbook
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
-        run: ansible-playbook -i inventory.ini ansible/docker_setup.yml
+        run: ansible-playbook -vv -i inventory.ini ansible/docker_setup.yml
 
   ansible-tailscale-setup:
     name: Ansible - Tailscale Setup

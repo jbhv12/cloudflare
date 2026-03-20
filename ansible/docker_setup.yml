@@ -7,13 +7,19 @@
     - name: Install prerequisites for Docker
       ansible.builtin.dnf:
         name:
-          - yum-utils
+          - dnf-plugins-core
         state: present
+        update_cache: yes
+        lock_timeout: 120
 
-    - name: Add Docker CE repository
-      ansible.builtin.command: dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-      args:
-        creates: /etc/yum.repos.d/docker-ce.repo
+    - name: Configure Docker CE repository
+      ansible.builtin.yum_repository:
+        name: docker-ce-stable
+        description: Docker CE Stable - $releasever - $basearch
+        baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+        enabled: yes
+        gpgcheck: yes
+        gpgkey: https://download.docker.com/linux/centos/gpg
 
     - name: Install Docker Engine, CLI, and plugins
       ansible.builtin.dnf:
@@ -25,6 +31,9 @@
           - docker-compose-plugin
         state: latest
         allowerasing: yes
+        update_cache: yes
+        lock_timeout: 300
+        nobest: yes
 
     - name: Enable and start Docker service
       ansible.builtin.systemd:
