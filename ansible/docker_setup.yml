@@ -1,8 +1,7 @@
----
 - hosts: all
   become: yes
   vars:
-    manager_host: "{{ groups['big'][0] }}"
+    manager_host: "{{ groups['all'][0] }}"
 
   tasks:
     - name: Install prerequisites for Docker

@@ -1,4 +1,4 @@
-- hosts: big
+- hosts: all
   become: yes
   vars:
     proxy_hosts:
