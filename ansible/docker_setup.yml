@@ -6,7 +6,6 @@
   pre_tasks:
     - name: Ensure DNF cache is available
       ansible.builtin.shell: dnf -y makecache --refresh
-      warn: false
       register: makecache
       changed_when: false
       retries: 3
