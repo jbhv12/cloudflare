@@ -28,10 +28,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
+      uses: hashicorp/setup-terraform@v4
       with:
         cli_config_credentials_token: ${{ secrets.TF_TOKEN_APP_TERRAFORM_IO }}
 
@@ -55,7 +55,7 @@ jobs:
     needs: terraform
     container: ghcr.io/ansible/creator-ee:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Write SSH key
         env:
@@ -91,7 +91,7 @@ jobs:
     needs: [terraform, ansible-firewall-setup]
     container: ghcr.io/ansible/creator-ee:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Write SSH key
         env:
@@ -132,7 +132,7 @@ jobs:
     env:
       TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Write SSH key
         env:
@@ -164,6 +164,45 @@ jobs:
           ansible-galaxy collection install community.general
           ansible-playbook -i inventory.ini ansible/tailscale_setup.yml -e "tailscale_auth_key=$TAILSCALE_AUTH_KEY"
   
+  ansible-smb-mount:
+    name: Ansible - SMB Mount
+    runs-on: ubuntu-latest
+    needs: [terraform, ansible-tailscale-setup]
+    container: ghcr.io/ansible/creator-ee:latest
+    env:
+      SMB_USER: ${{ secrets.SMB_USER }}
+      SMB_PASSWORD: ${{ secrets.SMB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Write SSH key
+        env:
+          SSH_KEY_B64: ${{ secrets.VM_PRIVATE_KEY_B64 }}
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "$SSH_KEY_B64" | base64 -d > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
+          
+          for ip in $INSTANCES_IPS; do
+            ssh-keyscan -T 5 -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
+          done
+
+      - name: Create Ansible inventory
+        run: |
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]"' | tr ',' ' ')
+
+          echo "[servers]" > inventory.ini
+          for ip in $INSTANCES_IPS; do
+            echo "$ip ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          done
+
+      - name: Run SMB Mount Playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'False'
+        run: ansible-playbook -i inventory.ini ansible/smb_mount.yml -e "smb_user=$SMB_USER" -e "smb_password=$SMB_PASSWORD"
+
   ansible-npm-setup:
     name: Ansible - NPM Setup
     runs-on: ubuntu-latest
@@ -174,7 +213,7 @@ jobs:
       NPM_PASSWORD: ${{ secrets.NPM_PASSWORD }}
       CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Write SSH key
         env:
@@ -211,7 +250,7 @@ jobs:
   #   env:
   #     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v5
 
   #     - name: Write SSH key
   #       env:

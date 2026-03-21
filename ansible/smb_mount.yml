@@ -1,0 +1,31 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install cifs-utils
+      ansible.builtin.apt:
+        name: cifs-utils
+        state: present
+        update_cache: yes
+
+    - name: Create mount point
+      ansible.builtin.file:
+        path: /mnt/remote
+        state: directory
+        mode: "0755"
+
+    - name: Create SMB credentials file
+      ansible.builtin.copy:
+        dest: /root/.smb_credentials
+        content: |
+          username={{ smb_user }}
+          password={{ smb_password }}
+        mode: "0600"
+
+    - name: Mount SMB share via fstab
+      ansible.posix.mount:
+        path: /mnt/remote
+        src: "//gl-mt3000/disk_root"
+        fstype: cifs
+        opts: "credentials=/root/.smb_credentials,uid=1000,gid=1000,iocharset=utf8,nofail,_netdev,vers=3.0"
+        state: mounted
