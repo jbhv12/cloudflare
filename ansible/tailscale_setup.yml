@@ -4,16 +4,6 @@
   collections:
     - community.general
 
-  pre_tasks:
-    - name: Wait for SSH to be available
-      ansible.builtin.wait_for:
-        host: "{{ ansible_host }}"
-        port: 22
-        delay: 5
-        timeout: 100
-        state: started
-      delegate_to: localhost
-
   tasks:
     - name: Add Tailscale GPG key
       ansible.builtin.shell: |
