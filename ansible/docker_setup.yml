@@ -8,18 +8,6 @@
       ansible.builtin.command: cloud-init status --wait
       changed_when: false
 
-    - name: Wait for any running package manager to release lock
-      ansible.builtin.shell: while fuser /var/run/yum.pid /var/run/dnf.pid >/dev/null 2>&1; do sleep 5; done
-      changed_when: false
-
-    - name: Ensure DNF cache is available
-      ansible.builtin.shell: dnf -y makecache --refresh
-      register: makecache
-      changed_when: false
-      retries: 3
-      delay: 10
-      until: makecache is succeeded
-
     - name: Enable OL9 addons repository (best effort)
       ansible.builtin.command: dnf config-manager --set-enabled ol9_addons
       register: enable_addons
