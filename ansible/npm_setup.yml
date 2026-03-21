@@ -8,7 +8,9 @@
       - domain_names: ["ai.oci.is-savvy.dev"]
         forward_host: "127.0.0.1"
         forward_port: 3145
-
+      - domain_names: ["jellyfin.oci.is-savvy.dev"]
+        forward_host: "127.0.0.1"
+        forward_port: 8096
   tasks:
     - name: Copy apps directory to target
       ansible.builtin.copy:
