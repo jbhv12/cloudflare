@@ -4,6 +4,14 @@
     manager_host: "{{ groups['all'][0] }}"
 
   pre_tasks:
+    - name: Wait for cloud-init to complete
+      ansible.builtin.command: cloud-init status --wait
+      changed_when: false
+
+    - name: Wait for any running package manager to release lock
+      ansible.builtin.shell: while fuser /var/run/yum.pid /var/run/dnf.pid >/dev/null 2>&1; do sleep 5; done
+      changed_when: false
+
     - name: Ensure DNF cache is available
       ansible.builtin.shell: dnf -y makecache --refresh
       register: makecache
