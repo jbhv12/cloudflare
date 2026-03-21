@@ -24,6 +24,9 @@
     - name: Allow NPM Admin
       ansible.builtin.command: ufw allow 81/tcp
 
+    - name: Allow NPM Admin 2
+      ansible.builtin.command: ufw allow 82/tcp
+
     - name: Allow HTTPS
       ansible.builtin.command: ufw allow 443/tcp
 

@@ -127,7 +127,7 @@ jobs:
   ansible-tailscale-setup:
     name: Ansible - Tailscale Setup
     runs-on: ubuntu-latest
-    needs: [terraform, ansible-docker-setup, ansible-npm-setup]
+    needs: [terraform, ansible-docker-setup]
     container: ghcr.io/ansible/creator-ee:latest
     env:
       TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
@@ -203,45 +203,6 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
         run: ansible-playbook -i inventory.ini ansible/smb_mount.yml -e "smb_user=$SMB_USER" -e "smb_password=$SMB_PASSWORD"
 
-  ansible-npm-setup:
-    name: Ansible - NPM Setup
-    runs-on: ubuntu-latest
-    needs: [terraform, ansible-docker-setup]
-    container: ghcr.io/ansible/creator-ee:latest
-    env:
-      NPM_USER: ${{ secrets.NPM_USER }}
-      NPM_PASSWORD: ${{ secrets.NPM_PASSWORD }}
-      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Write SSH key
-        env:
-          SSH_KEY_B64: ${{ secrets.VM_PRIVATE_KEY_B64 }}
-        run: |
-          install -m 700 -d ~/.ssh
-          echo "$SSH_KEY_B64" | base64 -d > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
-          
-          for ip in $INSTANCES_IPS; do
-            ssh-keyscan -T 5 -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
-          done
-
-      - name: Create Ansible inventory
-        run: |
-          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]"' | tr ',' ' ')
-
-          echo "[servers]" > inventory.ini
-          ip=$(echo $INSTANCES_IPS | awk '{print $1}')
-          echo "$ip ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
-
-      - name: Run NPM Setup Playbook
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: 'False'
-        run: ansible-playbook -i inventory.ini ansible/npm_setup.yml -e "npm_user=$NPM_USER" -e "npm_password=$NPM_PASSWORD" -e "cf_api_token=$CF_API_TOKEN"
-
   # ansible-apps:
   #   name: Ansible - Apps
   #   runs-on: ubuntu-latest
@@ -278,3 +239,42 @@ jobs:
   #       env:
   #         ANSIBLE_HOST_KEY_CHECKING: 'False'
   #       run: ansible-playbook -i inventory.ini ansible/start_apps.yml -e "openai_api_key=$OPENAI_API_KEY"
+
+  # ansible-npm-setup:
+  #   name: Ansible - NPM Setup
+  #   runs-on: ubuntu-latest
+  #   needs: [terraform, ansible-smb-mount]
+  #   container: ghcr.io/ansible/creator-ee:latest
+  #   env:
+  #     NPM_USER: ${{ secrets.NPM_USER }}
+  #     NPM_PASSWORD: ${{ secrets.NPM_PASSWORD }}
+  #     CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  #   steps:
+  #     - uses: actions/checkout@v5
+
+  #     - name: Write SSH key
+  #       env:
+  #         SSH_KEY_B64: ${{ secrets.VM_PRIVATE_KEY_B64 }}
+  #       run: |
+  #         install -m 700 -d ~/.ssh
+  #         echo "$SSH_KEY_B64" | base64 -d > ~/.ssh/id_rsa
+  #         chmod 600 ~/.ssh/id_rsa
+
+  #         INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
+          
+  #         for ip in $INSTANCES_IPS; do
+  #           ssh-keyscan -T 5 -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
+  #         done
+
+  #     - name: Create Ansible inventory
+  #       run: |
+  #         INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]"' | tr ',' ' ')
+
+  #         echo "[servers]" > inventory.ini
+  #         ip=$(echo $INSTANCES_IPS | awk '{print $1}')
+  #         echo "$ip ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+
+  #     - name: Run NPM Setup Playbook
+  #       env:
+  #         ANSIBLE_HOST_KEY_CHECKING: 'False'
+  #       run: ansible-playbook -i inventory.ini ansible/npm_setup.yml -e "npm_user=$NPM_USER" -e "npm_password=$NPM_PASSWORD" -e "cf_api_token=$CF_API_TOKEN"
