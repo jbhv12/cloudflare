@@ -8,36 +8,38 @@
       ansible.builtin.command: cloud-init status --wait
       changed_when: false
 
-    - name: Enable OL9 addons repository (best effort)
-      ansible.builtin.command: dnf config-manager --set-enabled ol9_addons
-      register: enable_addons
-      changed_when: enable_addons.rc == 0
-      failed_when: false
-      when: ansible_distribution == 'OracleLinux' and (ansible_distribution_major_version | int) >= 9
-
   tasks:
     - name: Install prerequisites for Docker
-      ansible.builtin.dnf:
+      ansible.builtin.apt:
         name:
-          - dnf-plugins-core
+          - ca-certificates
+          - curl
+          - gnupg
         state: present
         update_cache: yes
-        lock_timeout: 120
       async: 600
       poll: 10
 
-    - name: Configure Docker CE repository
-      ansible.builtin.yum_repository:
-        name: docker-ce-stable
-        description: Docker CE Stable - $releasever - $basearch
-        baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
-        enabled: yes
-        gpgcheck: yes
-        gpgkey: https://download.docker.com/linux/centos/gpg
-        module_hotfixes: yes
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add Docker GPG key
+      ansible.builtin.shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
+      args:
+        creates: /etc/apt/keyrings/docker.gpg
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
 
     - name: Install Docker Engine, CLI, and plugins
-      ansible.builtin.dnf:
+      ansible.builtin.apt:
         name:
           - docker-ce
           - docker-ce-cli
@@ -45,10 +47,7 @@
           - docker-buildx-plugin
           - docker-compose-plugin
         state: latest
-        allowerasing: yes
         update_cache: yes
-        lock_timeout: 300
-        nobest: yes
       async: 1200
       poll: 15
 
@@ -58,9 +57,9 @@
         state: started
         enabled: yes
 
-    - name: Add opc user to docker group
+    - name: Add ubuntu user to docker group
       ansible.builtin.user:
-        name: opc
+        name: ubuntu
         groups: docker
         append: yes
 

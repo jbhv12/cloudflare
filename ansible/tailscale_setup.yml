@@ -15,22 +15,20 @@
       delegate_to: localhost
 
   tasks:
-    - name: Add Tailscale repository for RHEL/CentOS
-      ansible.builtin.copy:
-        dest: /etc/yum.repos.d/tailscale.repo
-        content: |
-          [tailscale-stable]
-          name=Tailscale stable
-          baseurl=https://pkgs.tailscale.com/stable/rhel/9/$basearch
-          enabled=1
-          gpgcheck=1
-          gpgkey=https://pkgs.tailscale.com/stable/rhel/9/repo.gpg
-        owner: root
-        group: root
-        mode: '0644'
+    - name: Add Tailscale GPG key
+      ansible.builtin.shell: |
+        curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/{{ ansible_distribution_release }}.noarmor.gpg \
+          | tee /usr/share/keyrings/tailscale-archive-keyring.gpg > /dev/null
+      args:
+        creates: /usr/share/keyrings/tailscale-archive-keyring.gpg
+
+    - name: Add Tailscale apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu {{ ansible_distribution_release }} main"
+        state: present
 
     - name: Install Tailscale
-      ansible.builtin.dnf:
+      ansible.builtin.apt:
         name: tailscale
         state: latest
         update_cache: yes
@@ -38,4 +36,3 @@
     - name: Start Tailscale
       ansible.builtin.command: tailscale up --authkey={{ tailscale_auth_key }} --hostname={{ inventory_hostname }}
       changed_when: false
-
