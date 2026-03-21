@@ -3,11 +3,11 @@
   vars:
     proxy_hosts:
       - domain_names: ["npm.oci.is-savvy.dev"]
-        forward_host: "localhost"
+        forward_host: "127.0.0.1"
         forward_port: 81
       - domain_names: ["ai.oci.is-savvy.dev"]
-        forward_host: "localhost"
-        forward_port: 8081
+        forward_host: "127.0.0.1"
+        forward_port: 3145
 
   tasks:
     - name: Copy apps directory to target
