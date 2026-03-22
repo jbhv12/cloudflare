@@ -114,6 +114,8 @@ resource "oci_core_instance" "vm_instance" {
     display_name     = "primary-vnic"
   }
 
+  preserve_boot_volume = false
+
   source_details {
     source_type             = "image"
     source_id               = data.oci_core_images.ubuntu_latest.images[0].id
