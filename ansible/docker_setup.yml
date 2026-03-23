@@ -33,10 +33,19 @@
       args:
         creates: /etc/apt/keyrings/docker.gpg
 
+    - name: Get system architecture
+      ansible.builtin.command: dpkg --print-architecture
+      register: dpkg_arch
+      changed_when: false
+
     - name: Add Docker apt repository
       ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        repo: "deb [arch={{ dpkg_arch.stdout }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
 
     - name: Install Docker Engine, CLI, and plugins
       ansible.builtin.apt:
@@ -47,7 +56,6 @@
           - docker-buildx-plugin
           - docker-compose-plugin
         state: latest
-        update_cache: yes
       async: 1200
       poll: 15
 
