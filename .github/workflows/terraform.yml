@@ -1,8 +1,6 @@
 name: 'Terraform'
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   push:
     branches:
     - "main"
@@ -41,7 +39,6 @@ jobs:
       run: terraform init -upgrade
   
     - name: Terraform Apply
-      if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule')
       run: terraform apply -auto-approve
 
     - name: Get Instance IPs
@@ -124,7 +121,7 @@ jobs:
       - name: Run Docker Setup Playbook
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
-        run: ansible-playbook -vv -i inventory.ini ansible/docker_setup.yml
+        run: ansible-playbook -i inventory.ini ansible/docker_setup.yml
 
   ansible-tailscale-setup:
     name: Ansible - Tailscale Setup
