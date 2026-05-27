@@ -14,6 +14,9 @@
       - domain_names: ["firefly.oci.is-savvy.dev"]
         forward_host: "127.0.0.1"
         forward_port: 8081
+      - domain_names: ["coder.oci.is-savvy.dev"]
+        forward_host: "127.0.0.1"
+        forward_port: 3000
   tasks:
     - name: Copy apps directory to target
       ansible.builtin.copy:

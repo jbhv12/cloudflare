@@ -163,49 +163,10 @@ jobs:
           ansible-galaxy collection install community.general
           ansible-playbook -i inventory.ini ansible/tailscale_setup.yml -e "tailscale_auth_key=$TAILSCALE_AUTH_KEY"
   
-  ansible-smb-mount:
-    name: Ansible - SMB Mount
-    runs-on: ubuntu-latest
-    needs: [terraform, ansible-tailscale-setup]
-    container: ghcr.io/ansible/creator-ee:latest
-    env:
-      SMB_USER: ${{ secrets.SMB_USER }}
-      SMB_PASSWORD: ${{ secrets.SMB_PASSWORD }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Write SSH key
-        env:
-          SSH_KEY_B64: ${{ secrets.VM_PRIVATE_KEY_B64 }}
-        run: |
-          install -m 700 -d ~/.ssh
-          echo "$SSH_KEY_B64" | base64 -d > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
-          
-          for ip in $INSTANCES_IPS; do
-            ssh-keyscan -T 5 -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
-          done
-
-      - name: Create Ansible inventory
-        run: |
-          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]"' | tr ',' ' ')
-
-          echo "[servers]" > inventory.ini
-          for ip in $INSTANCES_IPS; do
-            echo "$ip ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
-          done
-
-      - name: Run SMB Mount Playbook
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: 'False'
-        run: ansible-playbook -i inventory.ini ansible/smb_mount.yml -e "smb_user=$SMB_USER" -e "smb_password=$SMB_PASSWORD"
-
   ansible-npm-setup:
     name: Ansible - NPM Setup
     runs-on: ubuntu-latest
-    needs: [terraform, ansible-smb-mount]
+    needs: [terraform, ansible-tailscale-setup]
     container: ghcr.io/ansible/creator-ee:latest
     env:
       NPM_USER: ${{ secrets.NPM_USER }}
@@ -240,3 +201,42 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
         run: ansible-playbook -i inventory.ini ansible/npm_setup.yml -e "npm_user=$NPM_USER" -e "npm_password=$NPM_PASSWORD" -e "cf_api_token=$CF_API_TOKEN"
+
+  ansible-smb-mount:
+    name: Ansible - SMB Mount
+    runs-on: ubuntu-latest
+    needs: [terraform, ansible-npm-setup]
+    container: ghcr.io/ansible/creator-ee:latest
+    env:
+      SMB_USER: ${{ secrets.SMB_USER }}
+      SMB_PASSWORD: ${{ secrets.SMB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Write SSH key
+        env:
+          SSH_KEY_B64: ${{ secrets.VM_PRIVATE_KEY_B64 }}
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "$SSH_KEY_B64" | base64 -d > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]" ' | tr ',' ' ')
+
+          for ip in $INSTANCES_IPS; do
+            ssh-keyscan -T 5 -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
+          done
+
+      - name: Create Ansible inventory
+        run: |
+          INSTANCES_IPS=$(echo '${{ needs.terraform.outputs.instance_public_ips }}' | tr -d '[]"' | tr ',' ' ')
+
+          echo "[servers]" > inventory.ini
+          for ip in $INSTANCES_IPS; do
+            echo "$ip ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          done
+
+      - name: Run SMB Mount Playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'False'
+        run: ansible-playbook -i inventory.ini ansible/smb_mount.yml -e "smb_user=$SMB_USER" -e "smb_password=$SMB_PASSWORD"
