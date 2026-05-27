@@ -125,6 +125,10 @@ resource "oci_core_instance" "vm_instance" {
   }
 
   display_name = count.index == 0 ? "instance-0" : "instance-1"
+
+  lifecycle {
+    ignore_changes = [source_details[0].source_id]
+  }
 }
 
 output "instance_public_ips" {

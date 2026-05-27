@@ -19,6 +19,12 @@ variable "docker_socket" {
   type        = string
 }
 
+variable "twingate_service_key" {
+  description = "Twingate service account key (JSON)"
+  type        = string
+  sensitive   = true
+}
+
 provider "docker" {
   # Defaulting to null if the variable is an empty string lets us have an optional variable without having to set our own default
   host = var.docker_socket != "" ? var.docker_socket : null
@@ -40,7 +46,10 @@ resource "coder_agent" "main" {
       touch ~/.init_done
     fi
 
-    # Add any commands that should be executed at workspace startup (e.g install requirements, start a program, etc) here
+    # Install and start Twingate client
+    curl -s https://binaries.twingate.com/client/linux/install.sh | sudo bash
+    echo "$TWINGATE_SERVICE_KEY" | sudo twingate setup --headless -
+    sudo twingate start
   EOT
 
   # These environment variables allow you to make Git commits right away after creating a
@@ -48,10 +57,11 @@ resource "coder_agent" "main" {
   # You can remove this block if you'd prefer to configure Git manually or using
   # dotfiles. (see docs/dotfiles.md)
   env = {
-    GIT_AUTHOR_NAME     = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
-    GIT_AUTHOR_EMAIL    = "${data.coder_workspace_owner.me.email}"
-    GIT_COMMITTER_NAME  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
-    GIT_COMMITTER_EMAIL = "${data.coder_workspace_owner.me.email}"
+    GIT_AUTHOR_NAME        = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
+    GIT_AUTHOR_EMAIL       = "${data.coder_workspace_owner.me.email}"
+    GIT_COMMITTER_NAME     = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
+    GIT_COMMITTER_EMAIL    = "${data.coder_workspace_owner.me.email}"
+    TWINGATE_SERVICE_KEY   = var.twingate_service_key
   }
 
   # The following metadata blocks are optional. They are used to display
