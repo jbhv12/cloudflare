@@ -4,10 +4,13 @@ services:
     container_name: coder
     restart: always
     ports:
-      - 3000:3000
+      - 7070:3000
     environment:
       - CODER_ACCESS_URL=https://coder.oci.is-savvy.dev
+      - CODER_HTTP_ADDRESS=0.0.0.0:3000
       - CODER_PG_CONNECTION_URL=postgresql://coder:coder@db:5432/coder?sslmode=disable
+    group_add:
+      - "988"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:

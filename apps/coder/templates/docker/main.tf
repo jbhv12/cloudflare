@@ -46,10 +46,7 @@ resource "coder_agent" "main" {
       touch ~/.init_done
     fi
 
-    # Install and start Twingate client
-    curl -s https://binaries.twingate.com/client/linux/install.sh | sudo bash
-    echo "$TWINGATE_SERVICE_KEY" | sudo twingate setup --headless -
-    sudo twingate start
+    # Twingate runs as a sidecar container sharing the network namespace
   EOT
 
   # These environment variables allow you to make Git commits right away after creating a
@@ -136,22 +133,19 @@ module "code-server" {
   count  = data.coder_workspace.me.start_count
   source = "registry.coder.com/coder/code-server/coder"
 
-  # This ensures that the latest non-breaking version of the module gets downloaded, you can also pin the module version to prevent breaking changes in production.
   version = "~> 1.0"
 
-  agent_id   = coder_agent.main.id
-  agent_name = "main"
-  order      = 1
+  agent_id = coder_agent.main.id
+  order    = 1
 }
 
 # See https://registry.coder.com/modules/coder/jetbrains
 module "jetbrains" {
-  count      = data.coder_workspace.me.start_count
-  source     = "registry.coder.com/modules/coder/jetbrains/coder"
-  version    = "~> 1.0"
-  agent_id   = coder_agent.main.id
-  agent_name = "main"
-  folder     = "/home/coder"
+  count    = data.coder_workspace.me.start_count
+  source   = "registry.coder.com/coder/jetbrains/coder"
+  version  = "~> 1.0"
+  agent_id = coder_agent.main.id
+  folder   = "/home/coder"
 }
 
 resource "docker_volume" "home_volume" {
@@ -222,4 +216,17 @@ resource "docker_container" "workspace" {
     label = "coder.workspace_name"
     value = data.coder_workspace.me.name
   }
+}
+
+resource "docker_container" "twingate" {
+  count        = data.coder_workspace.me.start_count
+  image        = "twingate/client:latest"
+  name         = "coder-${data.coder_workspace_owner.me.name}-${lower(data.coder_workspace.me.name)}-twingate"
+  restart      = "unless-stopped"
+  network_mode = "container:${docker_container.workspace[0].name}"
+  privileged   = true
+
+  env = [
+    "TWINGATE_SERVICE_KEY=${var.twingate_service_key}",
+  ]
 }
