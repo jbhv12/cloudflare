@@ -25,6 +25,24 @@ variable "twingate_service_key" {
   sensitive   = true
 }
 
+data "coder_parameter" "gitlab_pat" {
+  name         = "gitlab_pat"
+  display_name = "GitLab Personal Access Token"
+  description  = "(Optional) GitLab PAT for git push/pull"
+  type         = "string"
+  default      = ""
+  mutable      = true
+}
+
+data "coder_parameter" "git_clone_repo" {
+  name         = "git_clone_repo"
+  display_name = "Git Clone Repo"
+  description  = "(Optional) Git repository URL to auto-clone on first start"
+  type         = "string"
+  default      = ""
+  mutable      = true
+}
+
 provider "docker" {
   # Defaulting to null if the variable is an empty string lets us have an optional variable without having to set our own default
   host = var.docker_socket != "" ? var.docker_socket : null
@@ -46,7 +64,20 @@ resource "coder_agent" "main" {
       touch ~/.init_done
     fi
 
-    # Twingate runs as a sidecar container sharing the network namespace
+    # Configure git to use GitLab PAT for all push/pull if provided
+    if [ -n "$GITLAB_PAT" ]; then
+      git config --global credential.helper 'store'
+      echo "https://oauth2:$${GITLAB_PAT}@gitlab.com" > ~/.git-credentials
+      chmod 600 ~/.git-credentials
+    fi
+
+    # Auto-clone repo on first start
+    if [ -n "$GIT_CLONE_REPO" ]; then
+      REPO_DIR="$HOME/$(basename "$GIT_CLONE_REPO" .git)"
+      if [ ! -d "$REPO_DIR" ]; then
+        git clone "$GIT_CLONE_REPO" "$REPO_DIR"
+      fi
+    fi
   EOT
 
   # These environment variables allow you to make Git commits right away after creating a
@@ -59,6 +90,8 @@ resource "coder_agent" "main" {
     GIT_COMMITTER_NAME     = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
     GIT_COMMITTER_EMAIL    = "${data.coder_workspace_owner.me.email}"
     TWINGATE_SERVICE_KEY   = var.twingate_service_key
+    GITLAB_PAT             = data.coder_parameter.gitlab_pat.value
+    GIT_CLONE_REPO         = data.coder_parameter.git_clone_repo.value
   }
 
   # The following metadata blocks are optional. They are used to display
@@ -175,9 +208,20 @@ resource "docker_volume" "home_volume" {
   }
 }
 
+resource "docker_image" "workspace" {
+  name = "coder-${data.coder_workspace.me.id}-workspace"
+  build {
+    context    = "${path.module}"
+    dockerfile = "Dockerfile"
+  }
+  triggers = {
+    dockerfile_hash = filemd5("${path.module}/Dockerfile")
+  }
+}
+
 resource "docker_container" "workspace" {
   count = data.coder_workspace.me.start_count
-  image = "codercom/enterprise-base:ubuntu"
+  image = docker_image.workspace.image_id
   # Uses lower() to avoid Docker restriction on container names.
   name = "coder-${data.coder_workspace_owner.me.name}-${lower(data.coder_workspace.me.name)}"
   # Hostname makes the shell more user friendly: coder@my-workspace:~$
@@ -216,6 +260,32 @@ resource "docker_container" "workspace" {
     label = "coder.workspace_name"
     value = data.coder_workspace.me.name
   }
+}
+
+resource "coder_app" "browser" {
+  agent_id     = coder_agent.main.id
+  slug         = "browser"
+  display_name = "Browser"
+  icon         = "https://cdn.jsdelivr.net/gh/nicehash/logos@main/exchanges/chromium.svg"
+  url          = "http://localhost:3000"
+  subdomain    = false
+  share        = "owner"
+}
+
+resource "docker_container" "browser" {
+  count        = data.coder_workspace.me.start_count
+  image        = "lscr.io/linuxserver/chromium:latest"
+  name         = "coder-${data.coder_workspace_owner.me.name}-${lower(data.coder_workspace.me.name)}-browser"
+  restart      = "unless-stopped"
+  network_mode = "container:${docker_container.workspace[0].name}"
+  shm_size     = 1024
+
+  env = [
+    "PUID=1000",
+    "PGID=1000",
+    "CUSTOM_PORT=3000",
+    "CUSTOM_HTTPS_PORT=3001",
+  ]
 }
 
 resource "docker_container" "twingate" {
