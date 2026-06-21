@@ -17,7 +17,7 @@ resource "cloudflare_record" "oracle_wc" {
 resource "cloudflare_record" "local_wc" {
   zone_id = var.dns_zone_id
   name    = "*.who"
-  content   = "192.168.1.100"
+  content   = "10.10.0.130"
   type    = "A"
   proxied = false
 }
